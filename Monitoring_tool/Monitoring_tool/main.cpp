@@ -122,7 +122,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		p3 = new CMonitor_GraphUnit (hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
 		
 		srand (time (NULL) % 100);
-		SetTimer (hWnd, 1, 500, NULL);
+		SetTimer (hWnd, 1, 100, NULL);
 		
 		break;
 	case WM_TIMER:

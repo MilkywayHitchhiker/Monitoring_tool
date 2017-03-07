@@ -37,7 +37,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 
 
 	//윈도우를 생성해서 핸들을 넘겨 줍니다.
-	hWnd = CreateWindowW (szWindowClass, NULL, WS_CHILD | WS_VISIBLE | WS_CAPTION | WS_CLIPSIBLINGS,
+	hWnd = CreateWindowW (szWindowClass, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
 		iPosX, iPosY, iWidth, iHeight, hWndParent, nullptr, hInstance, nullptr);
 
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
@@ -72,9 +72,9 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 		break;
 	}
 
-	ResetMemDC (hWnd);
-
-
+	HDC hdc = GetDC (hWnd);
+	ResetMemDC (hdc);
+	ReleaseDC (hWnd, hdc);
 }
 
 
@@ -84,7 +84,6 @@ LRESULT CALLBACK CMonitor_GraphUnit:: WndProc (HWND hWnd, UINT message, WPARAM w
 	CMonitor_GraphUnit *pThis;
 	PAINTSTRUCT ps;
 	HDC hdc;
-	RECT rect;
 	pThis = GetThis (hWnd);
 
 switch ( message )
@@ -93,16 +92,12 @@ case WM_CREATE:
 	break;
 
 case WM_SIZE:
-
-	pThis->ResetMemDC (hWnd);
-	InvalidateRect (hWnd, NULL, TRUE);
+	InvalidateRect (hWnd, NULL, false);
 	break;
 
 case WM_PAINT:
 
 	hdc = BeginPaint (hWnd, &ps);
-	// TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다.
-	GetClientRect (hWnd, &rect);
 	switch ( pThis->GraphType )
 	{
 	case BAR_SINGLE_VERT :
@@ -114,18 +109,16 @@ case WM_PAINT:
 	case BAR_COLUMN_HORZ :
 		break;
 	case LINE_SINGLE :
-		pThis->Line_Single (hWnd);
+		pThis->Line_Single (hdc);
 		break;
 	case LINE_MULTI :
 		break;
 	};
-
 	EndPaint (hWnd, &ps);
 	break;
 
 case WM_DESTROY:
 	PostQuitMessage (0);
-	KillTimer (hWnd, 1);
 	break;
 
 default:
@@ -143,41 +136,26 @@ return 0;
 //==============================================
 //그래프 작업 함수들
 //==============================================
-void CMonitor_GraphUnit::Line_Single (HWND hWnd)
+void CMonitor_GraphUnit::Line_Single (HDC hdc)
 {
 	int Data = 0;
 	int cnt;
 	int x = 0;
-	int sum;
-	RECT rect;
-
-	HDC hdc= GetDC (hWnd);
-	GetClientRect (hWnd, &rect);
-	
+	RECT rect = Size;
 
 	hMemDC = CreateCompatibleDC (hdc);
-	hMemDC_OldBitmap = ( HBITMAP )SelectObject (hMemDC, hMemDC_Bitmap);
-	FillRect (hMemDC, &rect, CreateSolidBrush(BG_Color));
+	hMemDC_Bitmap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
+	hMemDC_OldBitmap = (HBITMAP) SelectObject (hMemDC, hMemDC_Bitmap);
 
-
-	sum = rect.right / Max;
-
-	//윈도우 좌표 변경
-//	SetMapMode (hMemDC, MM_TEXT);
-	//MM_TEXT모드에서만 작동한다.	
-//	SetViewportOrgEx (hMemDC, rect.left, rect.bottom - 5, NULL);
-
-	
-	//MM_TEXT에서는 작동을 안한다. 논리좌표와 물리좌표의 차이때문에 발생.
-//	SetWindowOrgEx (hMemDC, rect.left, rect.bottom, NULL);
+	FillRect (hMemDC, &Size, CreateSolidBrush(BG_Color));
 
 
 	queue[0]->Peek (&Data, 0);
-	MoveToEx (hMemDC, x, -Data, NULL);
+	MoveToEx (hMemDC, x,(rect.bottom - Data), NULL);
 
 	for ( cnt = 1; queue[0]->Peek (&Data, cnt); cnt++ )
 	{
-		x = x + sum;
+		x = cnt * rect.right / Max ;
 
 		if ( x == rect.right )
 		{
@@ -185,14 +163,14 @@ void CMonitor_GraphUnit::Line_Single (HWND hWnd)
 
 		}
 
-		LineTo (hMemDC, x, -Data);
-
+		LineTo (hMemDC, x, (rect.bottom - Data));
 	}
+
 
 	BitBlt (hdc, 0, 0, rect.right, rect.bottom, hMemDC, 0, 0, SRCCOPY);
 	SelectObject (hMemDC, hMemDC_OldBitmap);
 	DeleteObject (hMemDC);
-	ReleaseDC (hWnd, hdc);
+
 	return;
 }
 
@@ -221,36 +199,28 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int Line)
 //==============================================
 //Client 화면 크기 변경시 메모리 DC재작업 함수
 //==============================================
-void CMonitor_GraphUnit::ResetMemDC (HWND hWnd)
+void CMonitor_GraphUnit::ResetMemDC (HDC hdc)
 {
 	RECT rect;
 
-	HDC hdc;
 	HDC Buffer_DC;
 	HBITMAP Buffer_BitMap;
 	HBITMAP Buffer_OldBitMap;
 
-	hdc = GetDC (hWnd);
 
 	//변경될 클라이언트의 화면 사이즈 구함.
 	GetClientRect (hWnd, &rect);
 
-
-	if ( this == nullptr )
-	{
-		return;
-	}
-	
 	//hMemDC가 생성이 안되어 있다면 생성해주는 작업을 먼저 한다.
 	if ( hMemDC == NULL )
 	{
-
+		Size = rect;
 		hMemDC = CreateCompatibleDC (hdc);
 		hMemDC_Bitmap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
 		hMemDC_OldBitmap = ( HBITMAP )SelectObject (hdc, hMemDC_Bitmap);
 		
 	}
-	else
+	else if ((Size.right != rect.right) || (Size.bottom != rect.bottom))
 	{
 		
 		//변경될 사이즈에 맞는 DC와 비트맵 만들기.
@@ -273,8 +243,6 @@ void CMonitor_GraphUnit::ResetMemDC (HWND hWnd)
 		hMemDC_Bitmap = Buffer_BitMap;
 		hMemDC_OldBitmap = Buffer_OldBitMap;
 	}
-
-	ReleaseDC (hWnd,hdc);
 
 	return;
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include"Queue.h"
 #define dfMAXCHILD	100
-#define Max 55
+#define Max 100
 #define MaxString 100
 
 
@@ -43,7 +43,7 @@ private:
 	TYPE GraphType;								// 현재 창 그래프 타입입니다.
 	COLORREF BG_Color;
 	int Queue_cnt;								// Queue갯수.
-
+	RECT Size;
 	//메모리 DC를 사용하기 위해 필요한 것들.
 	HDC hMemDC;
 	HBITMAP hMemDC_Bitmap;
@@ -93,12 +93,12 @@ public :
 	//==============================================
 	//Client 화면 크기 변경시 메모리 DC재작업 함수
 	//==============================================
-	void ResetMemDC (HWND hWnd);
+	void ResetMemDC (HDC hdc);
 
 
 	//==============================================
 	//그래프 함수
 	//==============================================
-	void Line_Single (HWND hWnd);
+	void Line_Single (HDC hdc);
 	
 };
