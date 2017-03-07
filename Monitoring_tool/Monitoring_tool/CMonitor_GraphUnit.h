@@ -1,7 +1,7 @@
 #pragma once
 #include"Queue.h"
 #define dfMAXCHILD	100
-#define Max 100
+#define Max 55
 #define MaxString 100
 
 
