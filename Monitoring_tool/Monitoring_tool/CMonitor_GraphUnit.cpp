@@ -91,7 +91,7 @@ case WM_CREATE:
 
 case WM_SIZE:
 
-	pThis->ResetMemDC (hWnd);
+//	pThis->ResetMemDC (hWnd);
 	InvalidateRect (hWnd, NULL, TRUE);
 	break;
 
@@ -229,6 +229,7 @@ void CMonitor_GraphUnit::ResetMemDC (HWND hWnd)
 	Buffer_DC = CreateCompatibleDC (hdc);
 	Buffer_BitMap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
 	Buffer_OldBitMap = ( HBITMAP )SelectObject (hdc, Buffer_BitMap);
+
 	FillRect (Buffer_DC, &rect, CreateSolidBrush (BG_Color));
 
 	//기존 비트맵을 복사해서 새로 만든 비트맵에 붙여넣기.
