@@ -48,6 +48,9 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 		return;
 	}
 
+	//타이머 함수 작동!
+	SetTimer (hWnd, 1, 100, NULL);
+
 	//그래프 타입에 따라서 Queue의 갯수가 달라짐.
 
 	GraphType = enType;
@@ -89,7 +92,6 @@ LRESULT CALLBACK CMonitor_GraphUnit:: WndProc (HWND hWnd, UINT message, WPARAM w
 switch ( message )
 {
 case WM_CREATE:
-	SetTimer (hWnd, 1, 100, NULL);
 	break;
 
 case WM_SIZE:

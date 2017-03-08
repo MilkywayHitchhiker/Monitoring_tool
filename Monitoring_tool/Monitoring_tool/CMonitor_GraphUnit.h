@@ -66,6 +66,10 @@ public :
 	//생성자. 윈도우를 생성하고 초기화 시켜준다.
 	//=========================================
 	CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight, int DataQueue_Num = 1);
+
+	//=========================================
+	//파괴자. 동적할당 받은 queue를 파괴하고 삭제한다.
+	//=========================================
 	~CMonitor_GraphUnit (void)
 	{
 		int cnt;
