@@ -155,11 +155,24 @@ void CMonitor_GraphUnit::Line_Single (HDC hdc)
 	hMemDC_Bitmap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
 	hMemDC_OldBitmap = (HBITMAP) SelectObject (hMemDC, hMemDC_Bitmap);
 
+	// Flip Y axis
+	SetMapMode (hMemDC, MM_ISOTROPIC);
+	SetViewportOrgEx (hMemDC, 0, rect.bottom, NULL);
+	SetWindowExtEx (hMemDC, rect.bottom, rect.right, NULL);
+	SetViewportExtEx (hMemDC, rect.bottom, -rect.right, NULL);
+
+	// Required for both contexts
+	SetMapMode (hdc, MM_ISOTROPIC);
+	SetViewportOrgEx (hdc, 0, rect.bottom, NULL);
+	SetWindowExtEx (hdc, rect.bottom, rect.right, NULL);
+	SetViewportExtEx (hdc, rect.bottom, -rect.right, NULL);
+
+	//화면 채우기
 	FillRect (hMemDC, &Size, CreateSolidBrush(BG_Color));
 
 
 	queue[0]->Peek (&Data, 0);
-	MoveToEx (hMemDC, x,(rect.bottom - Data), NULL);
+	MoveToEx (hMemDC, x, Data, NULL);
 
 	for ( cnt = 1; queue[0]->Peek (&Data, cnt); cnt++ )
 	{
@@ -171,7 +184,7 @@ void CMonitor_GraphUnit::Line_Single (HDC hdc)
 
 		}
 
-		LineTo (hMemDC, x, (rect.bottom - Data));
+		LineTo (hMemDC, x, Data);
 	}
 
 
