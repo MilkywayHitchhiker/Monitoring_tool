@@ -43,13 +43,27 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 	hWnd_Parent = hWndParent;
 
+	HDC hdc = GetDC (hWnd);
+
+	GetClientRect (hWnd, &MemSize);
+
+	hMemDC = CreateCompatibleDC (hdc);
+	hMemDC_Bitmap = CreateCompatibleBitmap (hdc, MemSize.right, MemSize.bottom);
+	hMemDC_OldBitmap = ( HBITMAP )SelectObject (hMemDC, hMemDC_Bitmap);
+
+	// Flip Y axis
+	SetMapMode (hMemDC, MM_ANISOTROPIC);
+	SetViewportOrgEx (hMemDC, 0, MemSize.bottom, NULL);
+	SetWindowExtEx (hMemDC, MemSize.bottom, MemSize.right, NULL);
+	SetViewportExtEx (hMemDC, MemSize.bottom, -MemSize.right, NULL);
+
+	ReleaseDC (hWnd, hdc);
+
 	if ( !PutThis () )
 	{
 		return;
 	}
 
-	//타이머 함수 작동!
-	SetTimer (hWnd, 1, 100, NULL);
 
 	//그래프 타입에 따라서 Queue의 갯수가 달라짐.
 
@@ -75,9 +89,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 		break;
 	}
 
-	HDC hdc = GetDC (hWnd);
-	ResetMemDC (hdc);
-	ReleaseDC (hWnd, hdc);
+
 }
 
 
@@ -87,22 +99,19 @@ LRESULT CALLBACK CMonitor_GraphUnit:: WndProc (HWND hWnd, UINT message, WPARAM w
 	CMonitor_GraphUnit *pThis;
 	PAINTSTRUCT ps;
 	HDC hdc;
+
+
 	pThis = GetThis (hWnd);
+	if ( NULL == pThis )
+	{
+		return DefWindowProc (hWnd, message, wParam, lParam);
+	}
 
 switch ( message )
 {
 case WM_CREATE:
 	break;
-
-case WM_SIZE:
-	InvalidateRect (hWnd, NULL, false);
-	break;
-case WM_TIMER:
-	switch ( wParam )
-	{
-	case 1:
-		InvalidateRect (hWnd, NULL, false);
-	}
+case WM_COMMAND:
 	break;
 case WM_PAINT:
 
@@ -118,11 +127,13 @@ case WM_PAINT:
 	case BAR_COLUMN_HORZ :
 		break;
 	case LINE_SINGLE :
-		pThis->Line_Single (hdc);
+		pThis->Line_Single ();
 		break;
 	case LINE_MULTI :
 		break;
 	};
+
+	pThis->Flip_MemDC (hdc);
 	EndPaint (hWnd, &ps);
 	break;
 
@@ -146,31 +157,15 @@ return 0;
 //==============================================
 //그래프 작업 함수들
 //==============================================
-void CMonitor_GraphUnit::Line_Single (HDC hdc)
+void CMonitor_GraphUnit::Line_Single (void)
 {
 	int Data = 0;
 	int cnt;
 	int x = 0;
-	RECT rect = Size;
-
-	hMemDC = CreateCompatibleDC (hdc);
-	hMemDC_Bitmap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
-	hMemDC_OldBitmap = (HBITMAP) SelectObject (hMemDC, hMemDC_Bitmap);
-
-	// Flip Y axis
-	SetMapMode (hMemDC, MM_ISOTROPIC);
-	SetViewportOrgEx (hMemDC, 0, rect.bottom, NULL);
-	SetWindowExtEx (hMemDC, rect.bottom, rect.right, NULL);
-	SetViewportExtEx (hMemDC, rect.bottom, -rect.right, NULL);
-
-	// Required for both contexts
-	SetMapMode (hdc, MM_ISOTROPIC);
-	SetViewportOrgEx (hdc, 0, rect.bottom, NULL);
-	SetWindowExtEx (hdc, rect.bottom, rect.right, NULL);
-	SetViewportExtEx (hdc, rect.bottom, -rect.right, NULL);
+	RECT rect = MemSize;
 
 	//화면 채우기
-	FillRect (hMemDC, &Size, CreateSolidBrush(BG_Color));
+	FillRect (hMemDC, &MemSize, CreateSolidBrush(BG_Color));
 
 
 	queue[0]->Peek (&Data, 0);
@@ -189,10 +184,6 @@ void CMonitor_GraphUnit::Line_Single (HDC hdc)
 		LineTo (hMemDC, x, Data);
 	}
 
-
-	BitBlt (hdc, 0, 0, rect.right, rect.bottom, hMemDC, 0, 0, SRCCOPY);
-	SelectObject (hMemDC, hMemDC_OldBitmap);
-	DeleteObject (hMemDC);
 
 	return;
 }
@@ -213,60 +204,28 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int Line)
 		int Delete = 0;
 		queue[Line]->DeQueue (&Delete);
 		queue[Line]->EnQueue (Data);
-
 	}
+
+	InvalidateRect (hWnd, NULL, false);
 	return true;
 }
 
 //==============================================
-//Client 화면 크기 변경시 메모리 DC재작업 함수
+//MemDC화면 Flip함수
 //==============================================
-void CMonitor_GraphUnit::ResetMemDC (HDC hdc)
+void CMonitor_GraphUnit::Flip_MemDC (HDC hdc)
 {
-	RECT rect;
 
-	HDC Buffer_DC;
-	HBITMAP Buffer_BitMap;
-	HBITMAP Buffer_OldBitMap;
+	RECT rect = MemSize;
 
-
-	//변경될 클라이언트의 화면 사이즈 구함.
-	GetClientRect (hWnd, &rect);
-
-	//hMemDC가 생성이 안되어 있다면 생성해주는 작업을 먼저 한다.
-	if ( hMemDC == NULL )
-	{
-		Size = rect;
-		hMemDC = CreateCompatibleDC (hdc);
-		hMemDC_Bitmap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
-		hMemDC_OldBitmap = ( HBITMAP )SelectObject (hdc, hMemDC_Bitmap);
-		
-	}
-	else if ((Size.right != rect.right) || (Size.bottom != rect.bottom))
-	{
-		
-		//변경될 사이즈에 맞는 DC와 비트맵 만들기.
-		Buffer_DC = CreateCompatibleDC (hdc);
-		Buffer_BitMap = CreateCompatibleBitmap (hdc, rect.right, rect.bottom);
-		Buffer_OldBitMap = ( HBITMAP )SelectObject (hdc, Buffer_BitMap);
-
-		FillRect (Buffer_DC, &rect, CreateSolidBrush (BG_Color));
-
-		//기존 비트맵을 복사해서 새로 만든 비트맵에 붙여넣기.
-		BitBlt (Buffer_DC, 0, 0, rect.right, rect.bottom, hMemDC, 0, 0, SRCCOPY);
-
-		//기존 비트맵 삭제.
-		SelectObject (hMemDC, hMemDC_OldBitmap);
-		DeleteObject (hMemDC);
+	// Required for both contexts
+	SetMapMode (hdc, MM_ANISOTROPIC);
+	SetViewportOrgEx (hdc, 0, rect.bottom, NULL);
+	SetWindowExtEx (hdc, rect.bottom, rect.right, NULL);
+	SetViewportExtEx (hdc, rect.bottom, -rect.right, NULL);
 
 
-		//새로운 비트맵을 전역 메모리DC로 연결.
-		hMemDC = Buffer_DC;
-		hMemDC_Bitmap = Buffer_BitMap;
-		hMemDC_OldBitmap = Buffer_OldBitMap;
-	}
-
-	return;
+	BitBlt (hdc, 0, 0, rect.right, rect.bottom, hMemDC, 0, 0, SRCCOPY);
 }
 
 

@@ -129,24 +129,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch ( wParam )
 		{
 		case 1:
-			for ( int cnt = 0; cnt < 3; cnt++ )
+			LastInit++;
+			if ( LastInit > 100 )
 			{
-				LastInit = LastInit + (rand () % 20) - 10;
-				if ( LastInit <= 25 )
-				{
-					LastInit = LastInit + (rand () % 10);
-				}
-				else if ( LastInit >= 75 )
-				{
-					LastInit = LastInit + (rand () % 10) - 10;
-				}
-
-				p1->InitData (LastInit);
-				p2->InitData (rand () % 100);
-				p3->InitData (rand () % 100);
+				LastInit = 0;
 			}
-			
-			break;
+
+			p1->InitData (LastInit);
+			p2->InitData (LastInit);
+			p3->InitData (LastInit);
+		break;
 		}
 		break;
     case WM_PAINT:

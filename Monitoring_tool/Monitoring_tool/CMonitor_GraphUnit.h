@@ -43,7 +43,8 @@ private:
 	TYPE GraphType;								// 현재 창 그래프 타입입니다.
 	COLORREF BG_Color;
 	int Queue_cnt;								// Queue갯수.
-	RECT Size;
+	RECT MemSize;
+
 	//메모리 DC를 사용하기 위해 필요한 것들.
 	HDC hMemDC;
 	HBITMAP hMemDC_Bitmap;
@@ -79,6 +80,10 @@ public :
 			delete queue[cnt];
 		}
 		delete[]queue;
+
+		SelectObject (hMemDC, hMemDC_OldBitmap);
+		DeleteObject (hMemDC_Bitmap);
+		DeleteObject (hMemDC);
 		
 	}
 
@@ -97,12 +102,12 @@ public :
 	//==============================================
 	//Client 화면 크기 변경시 메모리 DC재작업 함수
 	//==============================================
-	void ResetMemDC (HDC hdc);
+	void Flip_MemDC (HDC hdc);
 
 
 	//==============================================
 	//그래프 함수
 	//==============================================
-	void Line_Single (HDC hdc);
+	void Line_Single (void);
 	
 };
