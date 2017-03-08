@@ -89,12 +89,19 @@ LRESULT CALLBACK CMonitor_GraphUnit:: WndProc (HWND hWnd, UINT message, WPARAM w
 switch ( message )
 {
 case WM_CREATE:
+	SetTimer (hWnd, 1, 100, NULL);
 	break;
 
 case WM_SIZE:
 	InvalidateRect (hWnd, NULL, false);
 	break;
-
+case WM_TIMER:
+	switch ( wParam )
+	{
+	case 1:
+		InvalidateRect (hWnd, NULL, false);
+	}
+	break;
 case WM_PAINT:
 
 	hdc = BeginPaint (hWnd, &ps);
@@ -119,6 +126,7 @@ case WM_PAINT:
 
 case WM_DESTROY:
 	PostQuitMessage (0);
+	KillTimer (hWnd, 1);
 	break;
 
 default:
@@ -192,7 +200,6 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int Line)
 		queue[Line]->EnQueue (Data);
 
 	}
-	InvalidateRect (hWnd,NULL,false);
 	return true;
 }
 
