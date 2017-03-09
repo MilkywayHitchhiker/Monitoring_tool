@@ -112,6 +112,8 @@ CMonitor_GraphUnit *p1;
 CMonitor_GraphUnit *p2;
 CMonitor_GraphUnit *p3;
 int LastInit;
+int LastInit2;
+int LastInit3;
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
@@ -121,23 +123,66 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		p2 = new CMonitor_GraphUnit (hInst, hWnd, RGB (199, 10, 10), CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
 		p3 = new CMonitor_GraphUnit (hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
 		
+		p1->SetInformation (L"Monitor1",1, 1, 50, 0, 0);
+		p2->SetInformation (L"Monitor2",2, 1, 60, 200, 0);
+		p3->SetInformation (L"Monitor3",3, 1, 100, 150, 0);
+
 		srand (time (NULL) % 100);
 		SetTimer (hWnd, 1, 100, NULL);
+
+		LastInit = 0;
+		LastInit2 = 100;
+		LastInit3 = 50;
 		
 		break;
 	case WM_TIMER:
 		switch ( wParam )
 		{
 		case 1:
+
 			LastInit++;
 			if ( LastInit > 100 )
 			{
 				LastInit = 0;
 			}
 
-			p1->InitData (LastInit);
-			p2->InitData (LastInit);
-			p3->InitData (LastInit);
+
+			LastInit2--;
+
+			if ( LastInit2 < 0 )
+			{
+				LastInit2 = 100;
+			}
+
+			LastInit3++;
+
+			if ( LastInit3 > 100 )
+			{
+				LastInit3 = 50;
+			}
+
+			for ( int cnt = 1; cnt < 4; cnt++ )
+			{
+				int Num;
+				switch ( cnt )
+				{
+					case 1 :
+						Num = LastInit;
+						break;
+					case 2 :
+						Num = LastInit2;
+						break;
+					case 3 :
+						Num = LastInit3;
+						break;
+				}
+
+				p1->InitData (Num,cnt,0 );
+				p2->InitData (Num,cnt,0 );
+				p3->InitData (Num,cnt,0 );
+
+			}
+
 		break;
 		}
 		break;
@@ -149,6 +194,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             EndPaint(hWnd, &ps);
         }
         break;
+	case UM_Alret:
+		
+		break;
     case WM_DESTROY:
         PostQuitMessage(0);
 		KillTimer (hWnd,1);
