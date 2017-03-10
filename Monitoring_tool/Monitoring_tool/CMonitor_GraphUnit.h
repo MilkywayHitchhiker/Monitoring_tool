@@ -81,9 +81,12 @@ private:
 		
 	HBRUSH BGBrush;								//백그라운드용 브러쉬
 
+
 	HBRUSH TitleBrush;							//타이틀용 브러쉬
 	HFONT TitleFont;							//타이틀용 폰트
-	COLORREF TitleColor;						//타이틀용 펜
+	COLORREF TitleColor;						//타이틀용 텍스트 색깔
+	COLORREF AlarmColor;						//알람이 작동할 경우 타이틀 색깔이 빨강색으로 바뀜.
+	bool AlarmFlag;								//알람이 작동할 경우 true로 바뀜.
 	
 	HFONT GridFont;								//그리드용 폰트
 	HPEN GridPen;								//그리드용 펜

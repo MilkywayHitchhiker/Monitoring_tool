@@ -188,19 +188,20 @@ void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQue
 
 	TitleBrush = CreateSolidBrush (RGB (max ((GetRValue (BG_Color) - 30), 0), max ((GetGValue (BG_Color) - 30), 0), max ((GetBValue (BG_Color) - 30), 0)));			//타이틀용 브러쉬
 	TitleFont = CreateFont (15, 0, 0, 0, 1000, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("궁서"));				//타이틀용 폰트
-	TitleColor = RGB ((255 - GetRValue (BG_Color)) + 30, (255 - GetGValue (BG_Color)) + 30, (255 - GetBValue (BG_Color)) + 30);
-
+	TitleColor = RGB ((255 - GetRValue (BG_Color)), (255 - GetGValue (BG_Color)), (255 - GetBValue (BG_Color)));
+	AlarmColor = RGB (220, 20, 60);
 
 	GridFont = 	CreateFont (15, 0, 0, 0, 5, 0, 0, 0,ANSI_CHARSET, OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH | FF_DONTCARE,TEXT("맑은 고딕"));		//그리드용 폰트
 	GridPen = CreatePen (PS_SOLID, 1, RGB (28, 28, 28));	//그리드용 펜
 
-	LinePen;								//라인용 펜
+	LinePen = CreatePen (PS_SOLID, 1, RGB (0, 0, 0));								//라인용 펜
 
 
 	//이걸로 설정해야 텍스트 배경이 투명하게 처리 된다.
 	SetBkMode (hMemDC, TRANSPARENT);
 
 	Alarm_SetTime = 0;
+	AlarmFlag = false;
 
 }
 
@@ -223,10 +224,10 @@ void CMonitor_GraphUnit::Line_Single (void)
 
 
 	//화면 채우기
-	OldBrush =(HBRUSH) SelectObject (hMemDC, BGBrush);
+	OldBrush = ( HBRUSH )SelectObject (hMemDC, BGBrush);
 	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
 
-	Rectangle (hMemDC, rect.left-1, rect.top-1, rect.right+1, rect.bottom);
+	Rectangle (hMemDC, rect.left-1, rect.top-1, rect.right+1, rect.bottom+1);
 	
 	SelectObject (hMemDC, OldBrush);
 	SelectObject (hMemDC, OldPen);
@@ -238,6 +239,8 @@ void CMonitor_GraphUnit::Line_Single (void)
 
 
 	//여기부터 그래프 그리기
+
+	OldPen = ( HPEN )SelectObject (hMemDC, LinePen);
 
 	queue[0]->Peek (&Data, 0);
 	MonitorData = Data * rect.bottom / WData.GraphMax;
@@ -264,6 +267,7 @@ void CMonitor_GraphUnit::Line_Single (void)
 		}
 	}
 
+
 	if ( WData.Graph_Flow )
 	{
 		if ( WData.GraphMax > GraphMax && !(WData.GraphMax <= 50) )
@@ -272,6 +276,8 @@ void CMonitor_GraphUnit::Line_Single (void)
 		}
 
 	}
+
+	SelectObject (hMemDC, OldPen);
 
 	return;
 }
@@ -283,6 +289,7 @@ void CMonitor_GraphUnit::Line_Single (void)
 //==============================================
 BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 {
+
 	//받아야 되는 데이터가 아니라면 그냥 되돌려 보낸다.
 	if ( WData._CPUID != CPUID )
 	{
@@ -303,6 +310,7 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 		queue[Line]->EnQueue (Data);
 	}
 
+	//그래프 Max치가 존재하지 않을 경우
 	if ( WData.Graph_Flow )
 	{
 		if ( Data > WData.GraphMax )
@@ -311,9 +319,18 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 		}
 	}
 
+	//알람 울리는 거.
 	if ( ( WData.AlretMax != 0 ) && ( WData.AlretMax < Data ) )
 	{
 		Alarm ();
+	}
+	else
+	{
+		ULONG64 Alarm_Time = GetTickCount64 ();
+		if ( Alarm_Time - Alarm_SetTime > AlarmMax )
+		{
+			AlarmFlag = false;
+		}
 	}
 
 
@@ -332,14 +349,16 @@ void CMonitor_GraphUnit::Alarm (void)
 	if ( Alarm_SetTime == 0 )
 	{
 		Alarm_SetTime = GetTickCount64 ();
-		Alarm_Time = Alarm_SetTime + AlarmMax;
+		SendMessage (hWnd_Parent, UM_Alret, NULL, NULL);
+		AlarmFlag = true;
 	}
 	
 
-	if ( ((Alarm_Time - Alarm_SetTime)  >= AlarmMax) )
+	if ( (Alarm_Time - Alarm_SetTime)  > AlarmMax )
 	{
 		SendMessage (hWnd_Parent, UM_Alret, NULL, NULL);
 		Alarm_SetTime = Alarm_Time;
+		AlarmFlag = true;
 	}
 
 	return;
@@ -374,15 +393,22 @@ void CMonitor_GraphUnit::Title (void)
 	OldBrush = ( HBRUSH )SelectObject (hMemDC, TitleBrush);
 	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
 
-	Rectangle (hMemDC, MemSize.left - 1, (GraphSize.bottom - MemSize.top) - 1, MemSize.right + 1, MemSize.bottom + 1);
+	Rectangle (hMemDC, MemSize.left - 1, (GraphSize.bottom - MemSize.top) - 1, MemSize.right + 1, MemSize.bottom);
 
 	SelectObject (hMemDC, OldBrush);
 	SelectObject (hMemDC, OldPen);
 
 	//타이틀 출력하기
 	OldFont = ( HFONT )SelectObject (hMemDC, TitleFont);
-	SetTextColor (hMemDC, TitleColor);
+	if ( !AlarmFlag )
+	{
+		SetTextColor (hMemDC, TitleColor);
 
+	}
+	else
+	{
+		SetTextColor (hMemDC, AlarmColor);
+	}
 	TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), Title_Name, lstrlenW (Title_Name));
 	
 	SetTextColor (hMemDC, RGB (0, 0, 0));

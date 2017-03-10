@@ -114,8 +114,28 @@ CMonitor_GraphUnit *p3;
 int LastInit;
 int LastInit2;
 int LastInit3;
+
+
+bool AlarmFlag = false;
+ULONG64 SetAlarm;
+ULONG64 EndAlarm;
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	HDC hdc;
+	PAINTSTRUCT ps;
+	RECT rect;
+
+
+	hdc = GetDC (hWnd);
+
+	HBRUSH Red = CreateSolidBrush (RGB (220, 20, 60));
+	HBRUSH White = CreateSolidBrush (RGB (255, 255, 255));
+	HBRUSH OldBrush;
+	GetClientRect (hWnd, &rect);
+
+	ReleaseDC (hWnd, hdc);
+
     switch (message)
     {
 	case WM_CREATE :
@@ -123,7 +143,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		p2 = new CMonitor_GraphUnit (hInst, hWnd, RGB (199, 10, 10), CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
 		p3 = new CMonitor_GraphUnit (hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
 		
-		p1->SetInformation (L"Monitor1",1, 1, 50, 0, 0);
+		p1->SetInformation (L"Monitor1",1, 1, 50, 0, 75);
 		p2->SetInformation (L"Monitor2",2, 1, 60, 200, 0);
 		p3->SetInformation (L"Monitor3",3, 1, 100, 150, 0);
 
@@ -133,7 +153,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		LastInit = 0;
 		LastInit2 = 100;
 		LastInit3 = 50;
-		
+				
 		break;
 	case WM_TIMER:
 		switch ( wParam )
@@ -166,40 +186,67 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				int Num;
 				switch ( cnt )
 				{
-					case 1 :
-						Num = LastInit;
-						break;
-					case 2 :
-						Num = LastInit2;
-						break;
-					case 3 :
-						Num = LastInit3;
-						break;
+				case 1:
+					Num = LastInit;
+					break;
+				case 2:
+					Num = LastInit2;
+					break;
+				case 3:
+					Num = LastInit3;
+					break;
 				}
 
-				p1->InitData (Num,cnt,0 );
-				p2->InitData (Num,cnt,0 );
-				p3->InitData (Num,cnt,0 );
+				p1->InitData (Num, cnt, 0);
+				p2->InitData (Num, cnt, 0);
+				p3->InitData (Num, cnt, 0);
 
 			}
-
-		break;
+			break;
 		}
+		if ( AlarmFlag )
+		{
+			EndAlarm = GetTickCount64 ();
+			if ( EndAlarm - SetAlarm > AlarmMax )
+			{
+				hdc = GetDC (hWnd);
+				OldBrush = ( HBRUSH )SelectObject (hdc, White);
+				Rectangle (hdc, rect.left, rect.top, rect.right, rect.bottom);
+				SelectObject (hdc, OldBrush);
+				ReleaseDC (hWnd, hdc);
+
+				AlarmFlag = false;
+			}
+
+		}
+
 		break;
     case WM_PAINT:
         {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hWnd, &ps);
+
+            hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다.
-            EndPaint(hWnd, &ps);
+			EndPaint(hWnd, &ps);
         }
         break;
 	case UM_Alret:
+		AlarmFlag = true;
+		SetAlarm = GetTickCount64 ();
 		
+		hdc = GetDC (hWnd);
+
+		OldBrush = ( HBRUSH )SelectObject (hdc, Red);
+		Rectangle (hdc, rect.left, rect.top, rect.right, rect.bottom);
+		SelectObject (hdc, OldBrush);
+
+		ReleaseDC (hWnd, hdc);
+
 		break;
     case WM_DESTROY:
-        PostQuitMessage(0);
-		KillTimer (hWnd,1);
+		KillTimer (hWnd, 1);
+		DeleteObject (Red);
+		PostQuitMessage(0);
+		
         break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
