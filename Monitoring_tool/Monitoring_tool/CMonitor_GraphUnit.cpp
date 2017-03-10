@@ -184,10 +184,12 @@ void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQue
 
 	BGBrush = CreateSolidBrush (BG_Color);
 
-
+	
 
 	TitleBrush = CreateSolidBrush (RGB (max ((GetRValue (BG_Color) - 30), 0), max ((GetGValue (BG_Color) - 30), 0), max ((GetBValue (BG_Color) - 30), 0)));			//타이틀용 브러쉬
-	TitleFont = CreateFont (15, 0, 0, 0, 500, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("궁서"));				//타이틀용 폰트
+	TitleFont = CreateFont (15, 0, 0, 0, 1000, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("궁서"));				//타이틀용 폰트
+	TitleColor = RGB ((255 - GetRValue (BG_Color)) + 30, (255 - GetGValue (BG_Color)) + 30, (255 - GetBValue (BG_Color)) + 30);
+
 
 	GridFont = 	CreateFont (15, 0, 0, 0, 5, 0, 0, 0,ANSI_CHARSET, OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH | FF_DONTCARE,TEXT("맑은 고딕"));		//그리드용 폰트
 	GridPen = CreatePen (PS_SOLID, 1, RGB (28, 28, 28));	//그리드용 펜
@@ -198,7 +200,7 @@ void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQue
 	//이걸로 설정해야 텍스트 배경이 투명하게 처리 된다.
 	SetBkMode (hMemDC, TRANSPARENT);
 
-	Alret_Trigger = false;
+	Alarm_SetTime = 0;
 
 }
 
@@ -309,9 +311,9 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 		}
 	}
 
-	if ( WData.AlretMax != 0 && WData.AlretMax < Data )
+	if ( ( WData.AlretMax != 0 ) && ( WData.AlretMax < Data ) )
 	{
-		Alret ();
+		Alarm ();
 	}
 
 
@@ -321,13 +323,26 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 
 }
 
-void CMonitor_GraphUnit::Alret (void)
+void CMonitor_GraphUnit::Alarm (void)
 {
-	if ( !Alret_Trigger )
+	ULONG64 Alarm_Time;
+	Alarm_Time = GetTickCount64 ();
+
+	//알람이 울리는 최초의 한번 작동함.
+	if ( Alarm_SetTime == 0 )
+	{
+		Alarm_SetTime = GetTickCount64 ();
+		Alarm_Time = Alarm_SetTime + AlarmMax;
+	}
+	
+
+	if ( ((Alarm_Time - Alarm_SetTime)  >= AlarmMax) )
 	{
 		SendMessage (hWnd_Parent, UM_Alret, NULL, NULL);
-		Alret_Trigger = true;
+		Alarm_SetTime = Alarm_Time;
 	}
+
+	return;
 }
 
 //==============================================
@@ -366,9 +381,11 @@ void CMonitor_GraphUnit::Title (void)
 
 	//타이틀 출력하기
 	OldFont = ( HFONT )SelectObject (hMemDC, TitleFont);
+	SetTextColor (hMemDC, TitleColor);
 
 	TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), Title_Name, lstrlenW (Title_Name));
-
+	
+	SetTextColor (hMemDC, RGB (0, 0, 0));
 	SelectObject (hMemDC, OldFont);
 
 	return;

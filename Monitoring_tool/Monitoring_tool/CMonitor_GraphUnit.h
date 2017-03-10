@@ -4,7 +4,7 @@
 #define MaxString 100
 
 #define UM_Alret WM_USER+1
-
+#define AlarmMax 500					//알람이 작동되면 울리기
 
 #define TitleBarLength 30
 
@@ -83,8 +83,9 @@ private:
 
 	HBRUSH TitleBrush;							//타이틀용 브러쉬
 	HFONT TitleFont;							//타이틀용 폰트
+	COLORREF TitleColor;						//타이틀용 펜
 	
-	HFONT GridFont;							//그리드용 폰트
+	HFONT GridFont;								//그리드용 폰트
 	HPEN GridPen;								//그리드용 펜
 
 	HPEN LinePen;								//라인용 펜
@@ -93,7 +94,7 @@ private:
 	HFONT OldFont;
 	HPEN OldPen;
 
-	bool Alret_Trigger;
+	ULONG64 Alarm_SetTime;
 
 
 protected:
@@ -129,6 +130,22 @@ public:
 		}
 		delete[]queue;
 
+
+		//SelectObject로 기본 브러쉬와 기본 폰트, 기본 펜으로 되돌린 후 전역에 미리 셋팅해논 모든 폰트와 펜,브러쉬를 삭제한다.
+		SelectObject (hMemDC, OldBrush);
+		SelectObject (hMemDC, OldFont);
+		SelectObject (hMemDC, OldPen);
+
+		DeleteObject (BGBrush);
+		
+		DeleteObject (TitleBrush);
+		DeleteObject (TitleFont);
+
+		DeleteObject (GridFont);
+		DeleteObject (GridPen);
+
+		DeleteObject (LinePen);
+
 		SelectObject (hMemDC, hMemDC_OldBitmap);
 		DeleteObject (hMemDC_Bitmap);
 		DeleteObject (hMemDC);
@@ -149,7 +166,7 @@ public:
 	//데이터 입력 함수
 	//==============================================
 	BOOL InitData (int Data, int CPUID, int Line = 0);
-	void Alret (void);
+	void Alarm (void);
 
 
 	//==============================================
