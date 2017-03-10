@@ -212,9 +212,10 @@ void CMonitor_GraphUnit::Line_Single (void)
 {
 	int GraphMax = 0;
 	int Data;
-	int MonitorData;
+	float MonitorData;
 	int cnt;
-	int x = 0;
+	float x_axis;
+	float x = 0;
 	RECT rect = GraphSize;
 
 
@@ -239,26 +240,26 @@ void CMonitor_GraphUnit::Line_Single (void)
 
 
 	//여기부터 그래프 그리기
-
+	x_axis = ( float )rect.right / (WData.Queue_Max - 1);
 	OldPen = ( HPEN )SelectObject (hMemDC, LinePen);
 
 	queue[0]->Peek (&Data, 0);
-	MonitorData = Data * rect.bottom / WData.GraphMax;
+	MonitorData = (float)Data * rect.bottom / WData.GraphMax;
 
-	MoveToEx (hMemDC, x, MonitorData, NULL);
+	MoveToEx (hMemDC, ( int )x, (int)MonitorData, NULL);
 
 	for ( cnt = 1; queue[0]->Peek (&Data, cnt); cnt++ )
 	{
-		x = cnt * rect.right / WData.Queue_Max ;
+		x = cnt * x_axis;
 
 		if ( x == rect.right )
 		{
 			x = 0;
 
 		}
-		MonitorData = Data * rect.bottom / WData.GraphMax;
+		MonitorData = ( float )Data * rect.bottom / WData.GraphMax;
 
-		LineTo (hMemDC, x, MonitorData);
+		LineTo (hMemDC, ( int )x, ( int )MonitorData);
 
 
 		if ( GraphMax < Data )
@@ -298,7 +299,7 @@ BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
 
 
 	//Queue갯수를 초과했을경우
-	if ( WData.Queue_cnt <= Line )
+	if ( WData.Queue_cnt < Line )
 	{
 		return false;
 	}
