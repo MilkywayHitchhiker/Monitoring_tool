@@ -3,12 +3,10 @@
 #include<time.h>
 
 static CMonitor_GraphUnit::stHWNDtoTHIS Table;
-CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight)
+CMonitor_GraphUnit::CMonitor_GraphUnit (WCHAR * Title,HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight)
 {
 	//모니터 윈도우 네임.
-	static int WinNum;
-	wsprintfW (szWindowClass, L"Monitoring Window child %d", WinNum);
-	WinNum++;
+	wsprintfW (TitleName, Title);
 
 
 	//창 클래스를 등록 합니다.
@@ -26,7 +24,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 	wcex.hCursor = NULL;
 	wcex.hbrBackground = ( HBRUSH )(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = szWindowClass;
+	wcex.lpszClassName = TitleName;
 	wcex.hIconSm = NULL;
 
 	RegisterClassExW (&wcex);
@@ -37,7 +35,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 
 
 	//윈도우를 생성해서 핸들을 넘겨 줍니다.
-	hWnd = CreateWindowW (szWindowClass, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
+	hWnd = CreateWindowW (TitleName, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
 		iPosX, iPosY, iWidth, iHeight, hWndParent, nullptr, hInstance, nullptr);
 
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
@@ -62,6 +60,9 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, CO
 	hMemDC = CreateCompatibleDC (hdc);
 	hMemDC_Bitmap = CreateCompatibleBitmap (hdc, MemSize.right, MemSize.bottom);
 	hMemDC_OldBitmap = ( HBITMAP )SelectObject (hMemDC, hMemDC_Bitmap);
+
+	GetClientRect (hWnd, &GraphSize);
+	GraphSize.bottom -= TitleBarLength;					// Y 축을 논리좌표 변환을 통해서 뒤집어 졌으므로 Top을 빼는게 아닌 Bottom을 빼야 Top이 빠진다!
 
 	// Flip Y axis
 	SetMapMode (hMemDC, MM_ANISOTROPIC);
@@ -108,9 +109,10 @@ case WM_PAINT:
 	case BAR_COLUMN_HORZ :
 		break;
 	case LINE_SINGLE :
-		pThis->Line_Single ();
+		pThis->Print_Line_Single ();
 		break;
 	case LINE_MULTI :
+		pThis->Print_Line_Multi ();
 		break;
 	};
 
@@ -135,28 +137,47 @@ return 0;
 //=========================================
 //그래프 구성에 필요한 데이터 수집 정보를 받고 이를 저장한다. AlretMax와 GraphMax의 경우 0일 경우 작동을 안한다.
 //=========================================
-void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQueue_Num , int QueueMax , int GraphMax , int AlretMax )
+void CMonitor_GraphUnit::DataColumnInfo (int ColumnNum,WCHAR *ColumnName,ULONG ServerID,int Type)
 {
-	if ( GraphMax == 0 )
+	int cnt;
+	//컬럼 Max치보다 컬럼 번호가 넘어갈 경우
+	if ( ColumnNum >= Column_Max )
 	{
-		WData.Graph_Flow = true;
-		GraphMax = 50;
+		return;
+	}
+
+	for ( cnt = 0; cnt < Column_Max; cnt++ )
+	{
+		if ( cnt == ColumnNum )
+		{
+			lstrcpyW (ColumnArray[cnt].Column_Name,ColumnName);
+			ColumnArray[cnt].u64ServerID = ServerID;
+			ColumnArray[cnt].iType = Type;
+		}
+	}
+	return;
+
+}
+
+void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int DataMax, int AlretMax)
+{
+
+	Column_Max = CulumnMax;
+	Graph_Max = DataMax;
+	Alarm_Max = AlretMax;
+	Queue_NodeMax = QueueNodeMax;
+
+
+
+	if ( Graph_Max == 0 )
+	{
+		Graph_Flow = true;
+		Graph_Max = 50;
 	}
 	else
 	{
-		WData.Graph_Flow = false;
+		Graph_Flow = false;
 	}
-
-
-	Title_Name = TitleName;
-
-
-	WData._CPUID = CPUID;
-	WData.Queue_cnt = DataQueue_Num;
-	WData.GraphMax = GraphMax;
-	WData.AlretMax = AlretMax;
-	WData.Queue_Max = QueueMax;
-
 
 	//그래프 타입에 따라서 Queue의 갯수가 달라짐.
 	switch ( GraphType )
@@ -170,33 +191,52 @@ void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQue
 	case BAR_COLUMN_HORZ:
 		break;
 	case LINE_SINGLE:
-		queue = new Queue<int> *[DataQueue_Num];
-		queue[0] = new Queue<int> (QueueMax);
+		ColumnArray = new stColumnInfo[CulumnMax];
+		ColumnArray[0].DataArray = new Queue<int> (Queue_NodeMax);
 		break;
 	case LINE_MULTI:
+		ColumnArray = new stColumnInfo[CulumnMax];
+		for ( int cnt = 0; cnt < CulumnMax; cnt++ )
+		{
+			ColumnArray[cnt].DataArray = new Queue<int> (Queue_NodeMax);
+		}
+		GraphSize.right -= BarNameLength;
 		break;
 	}
 
 
 
-	GetClientRect (hWnd, &GraphSize);
-	GraphSize.bottom -= TitleBarLength;					// Y 축을 논리좌표 변환을 통해서 뒤집어 졌으므로 Top을 빼는게 아닌 Bottom을 빼야 Top이 빠진다!
-
 	BGBrush = CreateSolidBrush (BG_Color);
 
-	
+
 
 	TitleBrush = CreateSolidBrush (RGB (max ((GetRValue (BG_Color) - 30), 0), max ((GetGValue (BG_Color) - 30), 0), max ((GetBValue (BG_Color) - 30), 0)));			//타이틀용 브러쉬
 	TitleFont = CreateFont (15, 0, 0, 0, 1000, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("궁서"));				//타이틀용 폰트
 	TitleColor = RGB ((255 - GetRValue (BG_Color)), (255 - GetGValue (BG_Color)), (255 - GetBValue (BG_Color)));
 	AlarmColor = RGB (220, 20, 60);
 
-	GridFont = 	CreateFont (15, 0, 0, 0, 5, 0, 0, 0,ANSI_CHARSET, OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH | FF_DONTCARE,TEXT("맑은 고딕"));		//그리드용 폰트
+	GridFont = CreateFont (15, 0, 0, 0, 5, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT ("맑은 고딕"));		//그리드용 폰트
 	GridPen = CreatePen (PS_SOLID, 1, RGB (28, 28, 28));	//그리드용 펜
 
-	LinePen = CreatePen (PS_SOLID, 1, RGB (0, 0, 0));								//라인용 펜
+	additionFont = GridFont;				//라인 설명용 폰트
+	additionPen = GridPen;					//라인 설명용 펜
+	additionBrush = CreateSolidBrush (RGB (max ((GetRValue (BG_Color) -50), 0), max ((GetGValue (BG_Color) - 50), 0), max ((GetBValue (BG_Color) - 50), 0)));;
 
 
+	LinePen[0] = CreatePen (PS_SOLID, 2, RGB (0, 0, 0));								//라인용 펜
+	LinePen[1] = CreatePen (PS_SOLID, 2, RGB (50, 50, 50));
+	LinePen[2] = CreatePen (PS_SOLID, 2, RGB (100, 10, 0));
+	LinePen[3] = CreatePen (PS_SOLID, 2, RGB (155, 155, 0));
+	LinePen[4] = CreatePen (PS_SOLID, 2, RGB (0, 155, 155));
+	LinePen[5] = CreatePen (PS_SOLID, 2, RGB (100, 0, 50));
+	LinePen[6] = CreatePen (PS_SOLID, 2, RGB (30, 70, 60));
+	LinePen[7] = CreatePen (PS_SOLID, 2, RGB (20, 20, 20));
+	LinePen[8] = CreatePen (PS_SOLID, 2, RGB (40, 50, 20));
+	LinePen[9] = CreatePen (PS_SOLID, 2, RGB (190, 155, 175));
+	
+
+
+	
 	//이걸로 설정해야 텍스트 배경이 투명하게 처리 된다.
 	SetBkMode (hMemDC, TRANSPARENT);
 
@@ -205,19 +245,20 @@ void CMonitor_GraphUnit::SetInformation (WCHAR *TitleName,int CPUID, int DataQue
 
 }
 
+
 //==============================================
 //그래프 작업 함수들
 //==============================================
-void CMonitor_GraphUnit::Line_Single (void)
+void CMonitor_GraphUnit::Print_Line_Single (void)
 {
-	int GraphMax = 0;
+	int GraphMax = Graph_Max;
+	int DataMax = 0;
 	int Data;
 	float MonitorData;
 	int cnt;
 	float x_axis;
 	float x = 0;
 	RECT rect = GraphSize;
-
 
 	//타이틀 그리기
 	Title ();
@@ -240,42 +281,40 @@ void CMonitor_GraphUnit::Line_Single (void)
 
 
 	//여기부터 그래프 그리기
-	x_axis = ( float )rect.right / (WData.Queue_Max - 1);
-	OldPen = ( HPEN )SelectObject (hMemDC, LinePen);
+	x_axis = ( float )rect.right / (Queue_NodeMax - 2);
+	OldPen = ( HPEN )SelectObject (hMemDC, LinePen[0]);
 
-	queue[0]->Peek (&Data, 0);
-	MonitorData = (float)Data * rect.bottom / WData.GraphMax;
+	if ( !ColumnArray[0].DataArray->Peek (&Data, 0) )
+	{
+		return;
+	}
+
+	MonitorData = (float)Data * rect.bottom / GraphMax;
 
 	MoveToEx (hMemDC, ( int )x, (int)MonitorData, NULL);
 
-	for ( cnt = 1; queue[0]->Peek (&Data, cnt); cnt++ )
+	for ( cnt = 1; ColumnArray[0].DataArray->Peek (&Data, cnt); cnt++ )
 	{
 		x = cnt * x_axis;
 
-		if ( x == rect.right )
-		{
-			x = 0;
-
-		}
-		MonitorData = ( float )Data * rect.bottom / WData.GraphMax;
+		MonitorData = ( float )Data * rect.bottom / GraphMax;
 
 		LineTo (hMemDC, ( int )x, ( int )MonitorData);
 
 
-		if ( GraphMax < Data )
+		if ( DataMax < Data )
 		{
-			GraphMax = Data;
+			DataMax = Data;
 		}
 	}
 
 
-	if ( WData.Graph_Flow )
+	if ( Graph_Flow )
 	{
-		if ( WData.GraphMax > GraphMax && !(WData.GraphMax <= 50) )
+		if ( DataMax < Graph_Max/2 && GraphMax > 50 )
 		{
-			WData.GraphMax -= 50;
+			Graph_Max = Graph_Max/2;
 		}
-
 	}
 
 	SelectObject (hMemDC, OldPen);
@@ -283,60 +322,134 @@ void CMonitor_GraphUnit::Line_Single (void)
 	return;
 }
 
+void CMonitor_GraphUnit::Print_Line_Multi (void)
+{
+	int GraphMax = Graph_Max;
+	int ColumnNum;
+	int Data;
+	float MonitorData;
+	int cnt;
+	float x_axis;
+	float x = 0;
+	RECT rect = GraphSize;
+
+
+	//타이틀 그리기
+	Title ();
+
+
+
+	//화면 채우기
+	OldBrush = ( HBRUSH )SelectObject (hMemDC, BGBrush);
+	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
+
+	Rectangle (hMemDC, rect.left - 1, rect.top - 1, rect.right + 1, rect.bottom + 1);
+
+	SelectObject (hMemDC, OldBrush);
+	SelectObject (hMemDC, OldPen);
+
+
+	//그리드 그리기
+	Grid ();
+
+	//화면 우측에 라인별 설명 나타내기
+	MultLine_addition ();
+
+	//여기부터 그래프 그리기
+	x_axis = ( float )rect.right / (Queue_NodeMax - 2);
+	OldPen = ( HPEN )SelectObject (hMemDC, LinePen[0]);
+
+	for ( ColumnNum = 0; ColumnNum < Column_Max; ColumnNum++ )
+	{
+		SelectObject (hMemDC, LinePen[ColumnNum]);
+
+		if ( !ColumnArray[ColumnNum].DataArray->Peek (&Data, 0) )
+		{
+			return;
+		}
+
+		x = 0;
+		MonitorData = ( float )Data * rect.bottom / GraphMax;
+
+		MoveToEx (hMemDC, ( int )x, ( int )MonitorData, NULL);
+
+		for ( cnt = 1; ColumnArray[ColumnNum].DataArray->Peek (&Data, cnt); cnt++ )
+		{
+			x = cnt * x_axis;
+
+			MonitorData = ( float )Data * rect.bottom / GraphMax;
+
+			LineTo (hMemDC, ( int )x, ( int )MonitorData);
+
+		}
+	}
+	
+
+	SelectObject (hMemDC, OldPen);
+
+
+}
+
+
+
 
 
 //==============================================
 //Queue데이터 관리 함수
 //==============================================
-BOOL CMonitor_GraphUnit::InitData (int Data, int CPUID, int Line)
+BOOL CMonitor_GraphUnit::InitData ( ULONG ServerID, int Data, int iType)
 {
-
-	//받아야 되는 데이터가 아니라면 그냥 되돌려 보낸다.
-	if ( WData._CPUID != CPUID )
+	int cnt;
+	for ( cnt = 0; cnt < Column_Max; cnt++ )
 	{
-		return false;
-	}
-
-
-	//Queue갯수를 초과했을경우
-	if ( WData.Queue_cnt < Line )
-	{
-		return false;
-	}
-
-	if ( !queue[Line]->EnQueue (Data) )
-	{
-		int Delete;
-		queue[Line]->DeQueue (&Delete);
-		queue[Line]->EnQueue (Data);
-	}
-
-	//그래프 Max치가 존재하지 않을 경우
-	if ( WData.Graph_Flow )
-	{
-		if ( Data > WData.GraphMax )
+		//서버 아이디가 같은지 확인.
+		if ( ColumnArray[cnt].u64ServerID == ServerID )
 		{
-			WData.GraphMax += WData.GraphMax;
+			//컬럼의 타입이 맞는지 체크
+			if ( ColumnArray[cnt].iType == iType )
+			{
+
+				if ( !ColumnArray[cnt].DataArray->EnQueue (Data) )
+				{
+					int Delete;
+					ColumnArray[cnt].DataArray->DeQueue (&Delete);
+					ColumnArray[cnt].DataArray->EnQueue (Data);
+				}
+
+
+				//그래프 Max치가 존재하지 않을 경우
+				if ( Graph_Flow )
+				{
+					if ( Data > Graph_Max )
+					{
+						Graph_Max += Graph_Max;
+					}
+				}
+
+				//알람 울리는 거.
+				if ( (Alarm_Max != 0) && (Alarm_Max < Data) )
+				{
+					Alarm ();
+				}
+				else
+				{
+					ULONG64 Alarm_Time = GetTickCount64 ();
+					if ( Alarm_Time - Alarm_SetTime > AlarmMax )
+					{
+						AlarmFlag = false;
+					}
+				}
+
+
+				InvalidateRect (hWnd, NULL, false);
+				return true;
+
+			}
+
 		}
 	}
 
-	//알람 울리는 거.
-	if ( ( WData.AlretMax != 0 ) && ( WData.AlretMax < Data ) )
-	{
-		Alarm ();
-	}
-	else
-	{
-		ULONG64 Alarm_Time = GetTickCount64 ();
-		if ( Alarm_Time - Alarm_SetTime > AlarmMax )
-		{
-			AlarmFlag = false;
-		}
-	}
-
-
-	InvalidateRect (hWnd, NULL, false);
-	return true;
+	return false;
 
 
 }
@@ -410,7 +523,7 @@ void CMonitor_GraphUnit::Title (void)
 	{
 		SetTextColor (hMemDC, AlarmColor);
 	}
-	TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), Title_Name, lstrlenW (Title_Name));
+	TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), TitleName, lstrlenW (TitleName));
 	
 	SetTextColor (hMemDC, RGB (0, 0, 0));
 	SelectObject (hMemDC, OldFont);
@@ -427,7 +540,7 @@ void CMonitor_GraphUnit::Grid (void)
 	double GridDataMax;
 
 	Y_axis =(double) GraphSize.bottom / 4.0;
-	GridData = ( double )WData.GraphMax / 4;
+	GridData = ( double )Graph_Max / 4;
 	
 
 	WCHAR GridNum[30] = L"";
@@ -460,6 +573,42 @@ void CMonitor_GraphUnit::Grid (void)
 
 
 
+void CMonitor_GraphUnit::MultLine_addition (void)
+{
+	int cnt;
+	LONG Y_axis;
+	int Y;
+	Y_axis = MemSize.bottom - dfTitleMax;
+
+	//바탕 채우기
+	OldBrush = ( HBRUSH )SelectObject (hMemDC, additionBrush);
+	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
+	
+	Rectangle (hMemDC, GraphSize.right-1, MemSize.top-1, MemSize.right + 1, Y_axis + 1);
+
+
+	
+	Y = Y_axis - 10;
+	//라인 그리고 이름 적기
+	OldFont =( HFONT ) SelectObject (hMemDC, additionFont);
+
+	for ( cnt = 0; cnt < Column_Max; cnt++ )
+	{
+	
+		Y = Y - 10;
+
+		SelectObject (hMemDC, LinePen[cnt]);
+
+		MoveToEx (hMemDC,GraphSize.right + 5, Y,NULL);
+		LineTo (hMemDC, GraphSize.right + 15, Y);
+
+		TextOutW (hMemDC, GraphSize.right + 20, Y + 7, ColumnArray[cnt].Column_Name, lstrlenW (ColumnArray[cnt].Column_Name));
+	}
+
+	SelectObject (hMemDC, OldBrush);
+	SelectObject (hMemDC, OldPen);
+	SelectObject (hMemDC, OldFont);
+}
 
 
 //==============================================

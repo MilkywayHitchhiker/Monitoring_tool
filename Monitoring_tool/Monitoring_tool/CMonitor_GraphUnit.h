@@ -7,6 +7,8 @@
 #define AlarmMax 500					//알람이 작동되면 울리기
 
 #define TitleBarLength 30
+#define BarNameLength 55
+#define dfTitleMax 30
 
 
 
@@ -37,34 +39,38 @@ public:
 	}stHWNDtoTHIS;
 
 
-	struct DataRef
+	typedef struct Culumn_INFO
 	{
-		int _CPUID;									// 해당 모니터에서 받아야되는 CPUID 정보
-		int AlretMax;								// 해당 수치에 도달하면 알람 발생.
-		int GraphMax;								// 해당그래프의 Max값.
-		bool Graph_Flow;							// Max값이 없는 유동그래프일시 true.
-		int Queue_cnt;								// Queue갯수.
-		int Queue_Max;
-	};
 
-	DataRef WData;
+		ULONG u64ServerID;							// 해당 모니터에서 받아야되는 ServerID 정보
+		int iType;									// 해당 모니터에서 받을 타입정보
+		WCHAR Column_Name[dfTitleMax];
+		Queue<int> *DataArray;							//해당 모니터의 queue
+	}stColumnInfo;
+
+	stColumnInfo *ColumnArray;
 
 
 private:
 
 
-	Queue<int> **queue;
 
 	HWND hWnd;
 	HWND hWnd_Parent;
 
 	HINSTANCE hInst;							// 현재 인스턴스 입니다.
-	WCHAR szWindowClass[MaxString];				// 기본 창 클래스 이름입니다.
-
+	WCHAR TitleName[dfTitleMax];					// 해당창의 타이틀에 들어갈 이름입니다.
 
 
 	TYPE GraphType;								// 현재 창 그래프 타입입니다.
-	WCHAR *Title_Name;
+
+
+	int Column_Max;								// Culumn의갯수.
+	int Queue_NodeMax;								// Queue안의 노드의 Max값.
+
+	int Alarm_Max;								// 해당 수치에 도달하면 알람 발생.
+	int Graph_Max;								// 해당그래프의 Max값.
+	bool Graph_Flow;							// Max값이 없는 유동그래프일시 true.
 
 	//각종 색깔들
 	COLORREF BG_Color;							// 백그라운드 컬러입니다.
@@ -91,7 +97,11 @@ private:
 	HFONT GridFont;								//그리드용 폰트
 	HPEN GridPen;								//그리드용 펜
 
-	HPEN LinePen;								//라인용 펜
+	HFONT additionFont;								//라인 부가 설명용 폰트
+	HPEN additionPen;								//라인 부가 설명용 펜
+	HBRUSH additionBrush;							//라인 부가 설명용 브러쉬
+
+	HPEN LinePen[10];								//라인용 펜
 
 	HBRUSH OldBrush;
 	HFONT OldFont;
@@ -118,7 +128,7 @@ public:
 	//=========================================
 	//생성자. 윈도우를 생성하고 초기화 시켜준다.
 	//=========================================
-	CMonitor_GraphUnit (HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight);
+	CMonitor_GraphUnit (WCHAR * Title, HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight);
 
 	//=========================================
 	//파괴자. 동적할당 받은 queue를 파괴하고 삭제한다.
@@ -127,12 +137,11 @@ public:
 	{
 		int cnt;
 		RemoveThis (hWnd);
-		for ( cnt = 0; cnt < WData.Queue_cnt; cnt++ )
+		for ( cnt = 0; cnt < Column_Max; cnt++ )
 		{
-			delete queue[cnt];
+			delete ColumnArray[cnt].DataArray;
 		}
-		delete[]queue;
-
+		delete[]ColumnArray;
 
 		//SelectObject로 기본 브러쉬와 기본 폰트, 기본 펜으로 되돌린 후 전역에 미리 셋팅해논 모든 폰트와 펜,브러쉬를 삭제한다.
 		SelectObject (hMemDC, OldBrush);
@@ -158,7 +167,8 @@ public:
 	//=========================================
 	//그래프 구성에 필요한 데이터 수집 정보를 받고 이를 저장한다. AlretMax와 GraphMax의 경우 0일 경우 작동을 안한다.
 	//=========================================
-	void SetInformation (WCHAR *TitleName, int CPUID, int DataQueue_Num = 1, int QueueMax = 2, int GraphMax = 0, int AlretMax = 0);
+	void CMonitorGraphUnit (int CulumnMax = 1, int QueueNodeMax = 2, int GraphMax = 0, int AlretMax = 0);
+	void DataColumnInfo (int ColumnNum, WCHAR *ColumnName, ULONG ServerID, int Type);
 
 	//==============================================
 	//윈도우 프로시저
@@ -168,7 +178,7 @@ public:
 	//==============================================
 	//데이터 입력 함수
 	//==============================================
-	BOOL InitData (int Data, int CPUID, int Line = 0);
+	BOOL InitData ( ULONG ServerID, int Data, int iType);
 	void Alarm (void);
 
 
@@ -182,12 +192,13 @@ public:
 	//==============================================
 	void Title (void);
 	void Grid (void);
-
+	void MultLine_addition (void);
 
 	//==============================================
 	//그래프 함수
 	//==============================================
-	void Line_Single (void);
+	void Print_Line_Single (void);
+	void Print_Line_Multi (void);
 
 
 

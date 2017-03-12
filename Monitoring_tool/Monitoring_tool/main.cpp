@@ -36,8 +36,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	wcex.hInstance = hInstance;
 	wcex.hIcon = LoadIcon (hInstance, MAKEINTRESOURCE (IDI_MONITORING_TOOL));
 	wcex.hCursor = LoadCursor (nullptr, IDC_ARROW);
-	wcex.hbrBackground = ( HBRUSH )(COLOR_WINDOW + 1);
-	wcex.lpszMenuName = NULL;
+	wcex.hbrBackground =(HBRUSH) GetStockObject (BLACK_BRUSH);
+	wcex.lpszMenuName = MAKEINTRESOURCEW (IDC_MONITORING_TOOL);
 	wcex.lpszClassName = L"main";
 	wcex.hIconSm = LoadIcon (wcex.hInstance, MAKEINTRESOURCE (IDI_SMALL));
 
@@ -111,6 +111,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 CMonitor_GraphUnit *p1;
 CMonitor_GraphUnit *p2;
 CMonitor_GraphUnit *p3;
+CMonitor_GraphUnit *p4;
 int LastInit;
 int LastInit2;
 int LastInit3;
@@ -139,13 +140,25 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
 	case WM_CREATE :
-		p1 = new CMonitor_GraphUnit (hInst, hWnd, RGB (200, 200, 10), CMonitor_GraphUnit::LINE_SINGLE, 10, 10, 200, 200);
-		p2 = new CMonitor_GraphUnit (hInst, hWnd, RGB (199, 10, 10), CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
-		p3 = new CMonitor_GraphUnit (hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
-		
-		p1->SetInformation (L"Monitor1",1, 1, 50, 0, 75);
-		p2->SetInformation (L"Monitor2",2, 1, 60, 200, 0);
-		p3->SetInformation (L"Monitor3",3, 1, 100, 150, 0);
+		p1 = new CMonitor_GraphUnit (L"CPU",hInst, hWnd, RGB (200, 200, 10), CMonitor_GraphUnit::LINE_SINGLE, 10, 10, 200, 200);
+		p2 = new CMonitor_GraphUnit (L"Memory",hInst, hWnd, RGB (199, 10, 10), CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
+		p3 = new CMonitor_GraphUnit (L"RAM",hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
+		p4 = new CMonitor_GraphUnit (L"Multi", hInst, hWnd, RGB (155, 75, 100), CMonitor_GraphUnit::LINE_MULTI, 840, 10, 400, 200);
+	
+		p1->CMonitorGraphUnit (1, 50, 0, 75);
+		p1->DataColumnInfo (0,L"Monitor1",1, 1);
+
+		p2->CMonitorGraphUnit (1, 60, 100, 0);
+		p2->DataColumnInfo (0,L"Monitor2",2, 1);
+
+		p3->CMonitorGraphUnit (1, 100, 100, 0);
+		p3->DataColumnInfo (0,L"Monitor3",3, 1);
+
+		p4->CMonitorGraphUnit (3,100,100,0);
+		p4->DataColumnInfo (0, L"Test1", 1, 1);
+		p4->DataColumnInfo (1, L"Test2", 2, 1);
+		p4->DataColumnInfo (2, L"Test3", 3, 1);
+
 
 		srand (time (NULL) % 100);
 		SetTimer (hWnd, 1, 100, NULL);
@@ -180,26 +193,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			{
 				LastInit3 = 50;
 			}
-
-			for ( int cnt = 1; cnt < 4; cnt++ )
+			int cnt;
+			int Type;
+			Type = 1;
+			for ( cnt = 1; cnt < 4; cnt++ )
 			{
-				int Num;
+				int Data;
 				switch ( cnt )
 				{
 				case 1:
-					Num = LastInit;
+					Data = LastInit;
 					break;
 				case 2:
-					Num = LastInit2;
+					Data = LastInit2;
 					break;
 				case 3:
-					Num = LastInit3;
+					Data = LastInit3;
 					break;
 				}
 
-				p1->InitData (Num, cnt, 0);
-				p2->InitData (Num, cnt, 0);
-				p3->InitData (Num, cnt, 0);
+				p1->InitData (cnt, Data, Type);
+				p2->InitData (cnt, Data, Type);
+				p3->InitData (cnt, Data, Type);
+				p4->InitData (cnt, Data, Type);
 
 			}
 			break;
@@ -210,7 +226,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			if ( EndAlarm - SetAlarm > AlarmMax )
 			{
 				hdc = GetDC (hWnd);
-				OldBrush = ( HBRUSH )SelectObject (hdc, White);
+				OldBrush = ( HBRUSH )SelectObject (hdc, GetStockObject(BLACK_BRUSH));
 				Rectangle (hdc, rect.left, rect.top, rect.right, rect.bottom);
 				SelectObject (hdc, OldBrush);
 				ReleaseDC (hWnd, hdc);

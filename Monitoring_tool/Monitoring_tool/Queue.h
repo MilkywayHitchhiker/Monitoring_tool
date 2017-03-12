@@ -68,6 +68,11 @@ public:
 			return false;
 		}
 
+		if ( (Rear > Front) && (Front + Num > Rear) )
+		{
+			return false;
+		}
+
 		*pOut = Que[(Buffer + Num) % QueMax];
 
 		return true;
