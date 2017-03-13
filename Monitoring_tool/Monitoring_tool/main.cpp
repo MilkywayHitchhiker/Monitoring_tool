@@ -225,11 +225,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			EndAlarm = GetTickCount64 ();
 			if ( EndAlarm - SetAlarm > AlarmMax )
 			{
-				hdc = GetDC (hWnd);
-				OldBrush = ( HBRUSH )SelectObject (hdc, GetStockObject(BLACK_BRUSH));
-				Rectangle (hdc, rect.left, rect.top, rect.right, rect.bottom);
-				SelectObject (hdc, OldBrush);
-				ReleaseDC (hWnd, hdc);
+				InvalidateRect (hWnd, &rect, false);
 
 				AlarmFlag = false;
 			}
@@ -242,6 +238,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             hdc = BeginPaint(hWnd, &ps);
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다.
+			OldBrush = ( HBRUSH )SelectObject (hdc, GetStockObject (BLACK_BRUSH));
+			Rectangle (hdc, rect.left, rect.top, rect.right, rect.bottom);
+			SelectObject (hdc, OldBrush);
 			EndPaint(hWnd, &ps);
         }
         break;

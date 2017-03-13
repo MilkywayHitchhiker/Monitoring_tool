@@ -584,7 +584,7 @@ void CMonitor_GraphUnit::MultLine_addition (void)
 	OldBrush = ( HBRUSH )SelectObject (hMemDC, additionBrush);
 	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
 	
-	Rectangle (hMemDC, GraphSize.right-1, MemSize.top-1, MemSize.right + 1, Y_axis + 1);
+	Rectangle (hMemDC, GraphSize.right, MemSize.top-1, MemSize.right + 1, Y_axis + 1);
 
 
 	
