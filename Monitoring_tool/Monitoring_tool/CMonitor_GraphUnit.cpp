@@ -562,7 +562,7 @@ void CMonitor_GraphUnit::Grid (void)
 		//중간값은 상관없는데 MAX값 출력할때 제대로 안나오므로 인자 두개를 사용해서 double로 Max값을 나눈뒤 cnt값으로 다시 곱하고 마지막에 출력할때만 int형으로 바꾼다.
 
 		GridDataMax = GridData * cnt;
-		wsprintfW (GridNum, L"%d",(int) GridDataMax);
+		_itow_s (( int )GridDataMax, GridNum, 10);
 		TextOutW (hMemDC,GraphSize.left, ( int )Y_axis * cnt, GridNum,lstrlenW(GridNum));
 	}
 
