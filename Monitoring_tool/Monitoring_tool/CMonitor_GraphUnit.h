@@ -9,6 +9,7 @@
 #define TitleBarLength 30
 #define BarNameLength 55
 #define dfTitleMax 30
+#define Pen_Max 10
 
 
 
@@ -41,7 +42,6 @@ public:
 
 	typedef struct Culumn_INFO
 	{
-
 		ULONG u64ServerID;							// 해당 모니터에서 받아야되는 ServerID 정보
 		int iType;									// 해당 모니터에서 받을 타입정보
 		WCHAR Column_Name[dfTitleMax];
@@ -66,7 +66,7 @@ private:
 
 
 	int Column_Max;								// Culumn의갯수.
-	int Queue_NodeMax;								// Queue안의 노드의 Max값.
+	int Queue_NodeMax;							// Queue안의 노드의 Max값.
 
 	int Alarm_Max;								// 해당 수치에 도달하면 알람 발생.
 	int Graph_Max;								// 해당그래프의 Max값.
@@ -101,7 +101,7 @@ private:
 	HPEN additionPen;								//라인 부가 설명용 펜
 	HBRUSH additionBrush;							//라인 부가 설명용 브러쉬
 
-	HPEN LinePen[10];								//라인용 펜
+	HPEN LinePen[Pen_Max];								//라인용 펜
 
 	HBRUSH OldBrush;
 	HFONT OldFont;
@@ -156,7 +156,15 @@ public:
 		DeleteObject (GridFont);
 		DeleteObject (GridPen);
 
-		DeleteObject (LinePen);
+
+		DeleteObject (additionFont);								//라인 부가 설명용 폰트
+		DeleteObject (additionPen);									//라인 부가 설명용 펜
+		DeleteObject (additionBrush);								//라인 부가 설명용 브러쉬
+
+		for ( int cnt = 0; cnt < Pen_Max; cnt++ )
+		{
+			DeleteObject (LinePen[cnt]);
+		}
 
 		SelectObject (hMemDC, hMemDC_OldBitmap);
 		DeleteObject (hMemDC_Bitmap);

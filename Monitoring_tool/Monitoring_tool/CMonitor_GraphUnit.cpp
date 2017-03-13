@@ -223,10 +223,10 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 	additionBrush = CreateSolidBrush (RGB (max ((GetRValue (BG_Color) -50), 0), max ((GetGValue (BG_Color) - 50), 0), max ((GetBValue (BG_Color) - 50), 0)));;
 
 
-	LinePen[0] = CreatePen (PS_SOLID, 2, RGB (0, 0, 0));								//¶óÀÎ¿ë Ææ
-	LinePen[1] = CreatePen (PS_SOLID, 2, RGB (50, 50, 50));
-	LinePen[2] = CreatePen (PS_SOLID, 2, RGB (100, 10, 0));
-	LinePen[3] = CreatePen (PS_SOLID, 2, RGB (155, 155, 0));
+	LinePen[0] = CreatePen (PS_SOLID, 2, RGB (255, 255, 255));								//¶óÀÎ¿ë Ææ
+	LinePen[1] = CreatePen (PS_SOLID, 2, RGB (155, 155, 130));
+	LinePen[2] = CreatePen (PS_SOLID, 2, RGB (100, 100, 70));
+	LinePen[3] = CreatePen (PS_SOLID, 2, RGB (50, 50, 50));
 	LinePen[4] = CreatePen (PS_SOLID, 2, RGB (0, 155, 155));
 	LinePen[5] = CreatePen (PS_SOLID, 2, RGB (100, 0, 50));
 	LinePen[6] = CreatePen (PS_SOLID, 2, RGB (30, 70, 60));
