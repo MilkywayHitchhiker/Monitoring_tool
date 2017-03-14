@@ -3,11 +3,16 @@
 #include<time.h>
 
 static CMonitor_GraphUnit::stHWNDtoTHIS Table;
-CMonitor_GraphUnit::CMonitor_GraphUnit (WCHAR * Title,HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight)
+CMonitor_GraphUnit::CMonitor_GraphUnit (WCHAR * Title, WCHAR *ColumnUnit, HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight )
 {
+	static int MonitorNum;
+	WCHAR WINDOW[dfMAXCHILD];
 	//모니터 윈도우 네임.
-	wsprintfW (TitleName, Title);
+	wsprintfW (WINDOW,L"child Window %d", MonitorNum);
+	MonitorNum++;
 
+	wsprintfW (TitleName, Title);
+	wsprintfW (unit, ColumnUnit);
 
 	//창 클래스를 등록 합니다.
 
@@ -24,7 +29,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (WCHAR * Title,HINSTANCE hInstance, HWND 
 	wcex.hCursor = NULL;
 	wcex.hbrBackground = ( HBRUSH )(COLOR_WINDOW + 1);
 	wcex.lpszMenuName = NULL;
-	wcex.lpszClassName = TitleName;
+	wcex.lpszClassName = WINDOW;
 	wcex.hIconSm = NULL;
 
 	RegisterClassExW (&wcex);
@@ -35,7 +40,7 @@ CMonitor_GraphUnit::CMonitor_GraphUnit (WCHAR * Title,HINSTANCE hInstance, HWND 
 
 
 	//윈도우를 생성해서 핸들을 넘겨 줍니다.
-	hWnd = CreateWindowW (TitleName, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
+	hWnd = CreateWindowW (WINDOW, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
 		iPosX, iPosY, iWidth, iHeight, hWndParent, nullptr, hInstance, nullptr);
 
 	hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
@@ -101,6 +106,7 @@ case WM_PAINT:
 	switch ( pThis->GraphType )
 	{
 	case BAR_SINGLE_VERT :
+		pThis->Print_Bar_Single ();
 		break;
 	case BAR_SINGLE_HORZ :
 		break;
@@ -183,6 +189,9 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 	switch ( GraphType )
 	{
 	case BAR_SINGLE_VERT:
+		ColumnArray = new stColumnInfo[1];
+		ColumnArray[0].DataArray = new Queue<int> (Queue_NodeMax);
+		GraphSize.top += BarNamespace;
 		break;
 	case BAR_SINGLE_HORZ:
 		break;
@@ -191,7 +200,7 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 	case BAR_COLUMN_HORZ:
 		break;
 	case LINE_SINGLE:
-		ColumnArray = new stColumnInfo[CulumnMax];
+		ColumnArray = new stColumnInfo[1];
 		ColumnArray[0].DataArray = new Queue<int> (Queue_NodeMax);
 		break;
 	case LINE_MULTI:
@@ -234,9 +243,15 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 	LinePen[8] = CreatePen (PS_SOLID, 2, RGB (40, 50, 20));
 	LinePen[9] = CreatePen (PS_SOLID, 2, RGB (190, 155, 175));
 	
-
-
+	BARBRUSH[0] = CreateSolidBrush (RGB (200, 255, 200));											//Bar용 브러쉬
+	BARBRUSH[0] = CreateSolidBrush (RGB (175, 175, 175));
+	BARBRUSH[0] = CreateSolidBrush (RGB (125, 125, 125));
+	BARBRUSH[0] = CreateSolidBrush (RGB (165, 125, 185));
+	BARBRUSH[0] = CreateSolidBrush (RGB (200, 100, 165));
 	
+	//바 그래프 가운데에 수치 표시
+	BARDataFont = CreateFont (16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, TEXT ("나눔고딕코딩"));
+
 	//이걸로 설정해야 텍스트 배경이 투명하게 처리 된다.
 	SetBkMode (hMemDC, TRANSPARENT);
 
@@ -387,10 +402,69 @@ void CMonitor_GraphUnit::Print_Line_Multi (void)
 
 	SelectObject (hMemDC, OldPen);
 
+	return;
 
 }
 
 
+void CMonitor_GraphUnit::Print_Bar_Single (void)
+{
+	int Data;
+	int PeekMax;
+	RECT rect = GraphSize;
+	RECT GraphRect;
+	WCHAR charData[20];
+
+	//타이틀 그리기
+	Title ();
+
+	//화면 채우기
+	OldBrush = ( HBRUSH )SelectObject (hMemDC, BGBrush);
+	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject (NULL_PEN));
+
+	Rectangle (hMemDC, rect.left - 1, rect.top, rect.right + 1, rect.bottom + 1);
+
+
+	
+	//그리드 드리기
+	Grid ();
+
+	SetTextAlign (hMemDC, TA_TOP | TA_CENTER);
+
+	//사각형 그릴 브러쉬 선택할것.
+	//외곽선이 없을 경우 널펜그대로 사용.
+	
+	SelectObject (hMemDC, BARBRUSH[0]);
+	SelectObject (hMemDC, GetStockObject (NULL_PEN));
+
+	PeekMax = ColumnArray[0].DataArray->GetUseSize ();
+
+	if ( !ColumnArray[0].DataArray->Peek (&Data, PeekMax - 1) )
+	{
+		return;
+	}
+
+	GraphRect.left = (rect.right / 4);
+	GraphRect.right = GraphRect.left * 3;
+	GraphRect.top = GraphSize.top;
+	GraphRect.bottom = (Data * (GraphSize.bottom - GraphSize.top) / Graph_Max) + GraphSize.top;
+
+	Rectangle (hMemDC, GraphRect.left, GraphRect.top, GraphRect.right, GraphRect.bottom);
+
+	
+	OldFont = ( HFONT )SelectObject (hMemDC, BARDataFont);
+	_itow_s (Data,charData,10);
+	TextOutW (hMemDC, GraphSize.right / 2, max (GraphRect.bottom, GraphRect.top + 20), charData, lstrlenW (charData));
+
+	
+	SelectObject (hMemDC, OldBrush);
+	SelectObject (hMemDC, OldPen);
+	SelectObject (hMemDC, OldFont);
+
+	
+
+	return;
+}
 
 
 
@@ -501,7 +575,11 @@ void CMonitor_GraphUnit::Flip_MemDC (HDC hdc)
 //==============================================
 void CMonitor_GraphUnit::Title (void)
 {
+	int PeekMax;
+	int Data;
+	WCHAR TitleData[dfTitleMax*2];
 
+	SetTextAlign (hMemDC, TA_TOP | TA_LEFT);
 
 	//타이틀바 칠하기
 	OldBrush = ( HBRUSH )SelectObject (hMemDC, TitleBrush);
@@ -511,6 +589,7 @@ void CMonitor_GraphUnit::Title (void)
 
 	SelectObject (hMemDC, OldBrush);
 	SelectObject (hMemDC, OldPen);
+
 
 	//타이틀 출력하기
 	OldFont = ( HFONT )SelectObject (hMemDC, TitleFont);
@@ -523,7 +602,26 @@ void CMonitor_GraphUnit::Title (void)
 	{
 		SetTextColor (hMemDC, AlarmColor);
 	}
-	TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), TitleName, lstrlenW (TitleName));
+	
+	//싱글 그래프 타입일 경우 타이틀 옆에 맨 마지막 데이터 값을 출력 해 준다.
+	if ( GraphType == BAR_SINGLE_HORZ || GraphType == BAR_SINGLE_VERT || GraphType == LINE_SINGLE )
+	{
+		PeekMax = ColumnArray[0].DataArray->GetUseSize ();
+
+		if ( !ColumnArray[0].DataArray->Peek (&Data, PeekMax - 1) )
+		{
+			return;
+		}
+
+		wsprintfW (TitleData, L"%s %d %s", TitleName, Data, unit);
+		TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), TitleData, lstrlenW (TitleData));
+	}
+	//멀티 그래프일경우 타이틀 이름만 출력해 준다.
+	else
+	{
+		TextOutW (hMemDC, MemSize.left + 3, MemSize.bottom - (TitleBarLength / 6), TitleName, lstrlenW (TitleName));
+	}
+
 	
 	SetTextColor (hMemDC, RGB (0, 0, 0));
 	SelectObject (hMemDC, OldFont);
@@ -539,9 +637,10 @@ void CMonitor_GraphUnit::Grid (void)
 	double GridData;
 	double GridDataMax;
 
-	Y_axis =(double) GraphSize.bottom / 4.0;
+	Y_axis =(double) (GraphSize.bottom - GraphSize.top) / 4.0;
 	GridData = ( double )Graph_Max / 4;
 	
+	SetTextAlign (hMemDC, TA_TOP | TA_LEFT);
 
 	WCHAR GridNum[30] = L"";
 
@@ -554,8 +653,8 @@ void CMonitor_GraphUnit::Grid (void)
 		if ( cnt != 4 )
 		{
 
-			MoveToEx (hMemDC, GraphSize.left, ( int )Y_axis * cnt, NULL);
-			LineTo (hMemDC, GraphSize.right, ( int )Y_axis * cnt);
+			MoveToEx (hMemDC, GraphSize.left, ( int )(Y_axis * cnt) + GraphSize.top, NULL);
+			LineTo (hMemDC, GraphSize.right, ( int )(Y_axis * cnt) + GraphSize.top);
 		}
 
 		//wsprintfW함수의 단점은 float형을 지원하지 않는다는 것이다.
@@ -563,7 +662,7 @@ void CMonitor_GraphUnit::Grid (void)
 
 		GridDataMax = GridData * cnt;
 		_itow_s (( int )GridDataMax, GridNum, 10);
-		TextOutW (hMemDC,GraphSize.left, ( int )Y_axis * cnt, GridNum,lstrlenW(GridNum));
+		TextOutW (hMemDC,GraphSize.left, ( int )(Y_axis * cnt) + GraphSize.top, GridNum,lstrlenW(GridNum));
 	}
 
 	SelectObject (hMemDC, OldPen);
@@ -572,13 +671,15 @@ void CMonitor_GraphUnit::Grid (void)
 }
 
 
-
+//다중 라인 우측 이름표 작업
 void CMonitor_GraphUnit::MultLine_addition (void)
 {
 	int cnt;
 	LONG Y_axis;
 	int Y;
 	Y_axis = MemSize.bottom - dfTitleMax;
+
+	SetTextAlign (hMemDC, TA_TOP | TA_LEFT);
 
 	//바탕 채우기
 	OldBrush = ( HBRUSH )SelectObject (hMemDC, additionBrush);
@@ -610,7 +711,11 @@ void CMonitor_GraphUnit::MultLine_addition (void)
 	SelectObject (hMemDC, OldFont);
 }
 
+//Bar 하단부 이름표 작업.
+void CMonitor_GraphUnit::Bottom_NameBar (void)
+{
 
+}
 //==============================================
 //Table 관리 함수들
 //==============================================
