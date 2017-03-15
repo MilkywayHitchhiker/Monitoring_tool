@@ -113,6 +113,7 @@ CMonitor_GraphUnit *p2;
 CMonitor_GraphUnit *p3;
 CMonitor_GraphUnit *p4;
 CMonitor_GraphUnit *p5;
+CMonitor_GraphUnit *p6;
 
 int LastInit;
 int LastInit2;
@@ -142,11 +143,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
 	case WM_CREATE :
-		p1 = new CMonitor_GraphUnit (L"CPU",L"%%",hInst, hWnd, RGB (200, 200, 10), CMonitor_GraphUnit::LINE_SINGLE, 10, 10, 200, 200);
-		p2 = new CMonitor_GraphUnit (L"Memory",L"MB",hInst, hWnd, RGB (199, 10, 10), CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
-		p3 = new CMonitor_GraphUnit (L"RAM",L"KB",hInst, hWnd, RGB (100, 100, 100), CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
-		p4 = new CMonitor_GraphUnit (L"MultiCPU",L"", hInst, hWnd, RGB (155, 75, 100), CMonitor_GraphUnit::LINE_MULTI, 840, 10, 400, 200);
-		p5 = new CMonitor_GraphUnit (L"CPU", L"%%", hInst, hWnd, RGB (200, 200, 10), CMonitor_GraphUnit::BAR_SINGLE_VERT, 10, 220, 200, 200);
+		p1 = new CMonitor_GraphUnit (L"CPU",L"%%",hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::LINE_SINGLE, 10, 10, 200, 200);
+		p2 = new CMonitor_GraphUnit (L"Memory",L"MB",hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::LINE_SINGLE, 220, 10, 200, 200);
+		p3 = new CMonitor_GraphUnit (L"RAM",L"KB",hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::LINE_SINGLE, 430, 10, 400, 200);
+		p4 = new CMonitor_GraphUnit (L"MultiCPU",L"", hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::LINE_MULTI, 840, 10, 400, 200);
+		p5 = new CMonitor_GraphUnit (L"CPU", L"%%", hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::BAR_SINGLE_VERT, 10, 220, 200, 200);
+		p6 = new CMonitor_GraphUnit (L"Multi", L"", hInst, hWnd, Graphcolor_Gray, CMonitor_GraphUnit::BAR_COLUMN_VERT, 220, 220, 400, 200);
 
 
 		p1->CMonitorGraphUnit (1, 50, 0, 75);
@@ -165,6 +167,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 		p5->CMonitorGraphUnit (1, 50, 100, 75);
 		p5->DataColumnInfo (0, L"Monitor1", 1, 1);
+
+		p6->CMonitorGraphUnit (3, 100, 100, 0);
+		p6->DataColumnInfo (0, L"Monitor1", 1, 1);
+		p6->DataColumnInfo (1, L"Monitor2", 2, 1);
+		p6->DataColumnInfo (2, L"Monitor3", 3, 1);
 
 		srand (time (NULL) % 100);
 		SetTimer (hWnd, 1, 100, NULL);
@@ -223,6 +230,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				p3->InitData (cnt, Data, Type);
 				p4->InitData (cnt, Data, Type);
 				p5->InitData (cnt, Data, Type);
+				p6->InitData (cnt, Data, Type);
 
 			}
 			break;

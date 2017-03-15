@@ -16,7 +16,27 @@
 #define Pen_Max 10
 #define Bar_Max 5
 
+#define NaNumGoDic 16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, TEXT ("³ª´®°íµñÄÚµù")
+#define GoDic 15, 0, 0, 0, 5, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT ("¸¼Àº °íµñ")
+#define GungSer 15, 0, 0, 0, 1000, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("±Ã¼­")
 
+#define Graphcolor_DeepGray	RGB(46,46,46)
+#define Graphcolor_Gray		RGB(110,110,110)
+#define Graphcolor_LightGray	RGB(230,230,230)
+#define Graphcolor_Red			RGB(255,0,0)
+#define Graphcolor_LightRed		RGB(250,88,88)
+#define Graphcolor_DarkRed		RGB(180,4,4)
+#define Graphcolor_Orange		RGB(255,128,0)
+#define Graphcolor_LightGreen	RGB(128,255,0)
+#define Graphcolor_LightBlue	RGB(46,100,254)
+#define Graphcolor_LightPink	RGB(250,88,244)
+#define Graphcolor_WHITE		RGB(255,255,255)
+#define Graphcolor_Black		RGB(0,0,0)
+#define Graphcolor_Purple		RGB(137,0,223)
+#define Graphcolor_Sky			RGB(0,191,255)
+#define Graphcolor_Green		RGB(46,254,46)
+#define Graphcolor_LightSky		RGB(88,250,208)
+#define Graphcolor_DeepBlue		RGB(11,33,97)
 
 
 
@@ -220,6 +240,7 @@ public:
 	void Print_Line_Single (void);
 	void Print_Line_Multi (void);
 	void Print_Bar_Single (void);
+	void Print_Bar_Multi (void);
 
 
 
