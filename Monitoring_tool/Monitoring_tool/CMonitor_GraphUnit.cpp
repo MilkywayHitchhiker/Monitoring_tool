@@ -429,6 +429,9 @@ void CMonitor_GraphUnit::Print_Bar_Single (void)
 	//그리드 드리기
 	Grid ();
 
+	//하단에 네임 Bar 붙이기.
+	Bottom_NameBar ();
+
 	SetTextAlign (hMemDC, TA_TOP | TA_CENTER);
 
 	//사각형 그릴 브러쉬 선택할것.
@@ -444,7 +447,7 @@ void CMonitor_GraphUnit::Print_Bar_Single (void)
 		return;
 	}
 
-	GraphRect.left = (rect.right / 4);
+	GraphRect.left = (GraphSize.right / 4);
 	GraphRect.right = GraphRect.left * 3;
 	GraphRect.top = GraphSize.top;
 	GraphRect.bottom = (Data * (GraphSize.bottom - GraphSize.top) / Graph_Max) + GraphSize.top;
@@ -714,6 +717,33 @@ void CMonitor_GraphUnit::MultLine_addition (void)
 //Bar 하단부 이름표 작업.
 void CMonitor_GraphUnit::Bottom_NameBar (void)
 {
+	SetTextAlign (hMemDC, TA_TOP | TA_CENTER);
+	
+	RECT rect = GraphSize;
+
+	OldBrush = ( HBRUSH )SelectObject (hMemDC, BGBrush);
+	OldPen = ( HPEN )SelectObject (hMemDC, GetStockObject(NULL_PEN));
+
+	rect.top = 0;
+	rect.bottom = BarNamespace;
+
+	Rectangle (hMemDC, rect.left-1, rect.top-1, rect.right+1, rect.bottom+1);
+
+
+
+	OldFont = ( HFONT )SelectObject (hMemDC, BARUnitFont);
+
+	if ( GraphType == BAR_SINGLE_VERT )
+	{
+		TextOutW (hMemDC, rect.right / 2, rect.bottom, ColumnArray[0].Column_Name, lstrlenW (ColumnArray[0].Column_Name));
+	}
+
+
+	SelectObject (hMemDC, OldFont);
+	SelectObject (hMemDC, OldBrush);
+	SelectObject (hMemDC, OldPen);
+
+	return;
 
 }
 //==============================================

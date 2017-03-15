@@ -107,6 +107,7 @@ private:
 	HPEN LinePen[Pen_Max];							//라인용 펜
 	HBRUSH BARBRUSH[Bar_Max];						//Bar용 색깔 브러쉬
 	HFONT BARDataFont;								//Bar 가운데 수치 표시
+	HFONT BARUnitFont;								//Bar하단 이름 쓸 글씨 폰트.
 
 	HBRUSH OldBrush;
 	HFONT OldFont;
@@ -169,11 +170,12 @@ public:
 		{
 			DeleteObject (LinePen[cnt]);
 		}
-		for ( int cnt = 0; cnt < Bar_Max; cnt++ )
+		for ( int cnt = 0; cnt < Bar_Max; cnt++ )					//BAR용 브러쉬와 폰트 삭제.
 		{
 			DeleteObject (BARBRUSH[cnt]);
 		}
 		DeleteObject (BARDataFont);
+		DeleteObject (BARUnitFont);
 
 		SelectObject (hMemDC, hMemDC_OldBitmap);
 		DeleteObject (hMemDC_Bitmap);
