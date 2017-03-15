@@ -229,7 +229,7 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 	TitleBrush = CreateSolidBrush (Graphcolor_LightGray);			//타이틀용 브러쉬
 	TitleFont = CreateFont (GungSer);								//타이틀용 폰트
 	TitleColor = Graphcolor_Purple;
-	AlarmColor = Graphcolor_LightRed;
+	AlarmColor = Graphcolor_PinkRed;
 
 	GridFont = CreateFont (GoDic);		//그리드용 폰트
 	GridPen = CreatePen (PS_SOLID, 1, RGB (28, 28, 28));	//그리드용 펜

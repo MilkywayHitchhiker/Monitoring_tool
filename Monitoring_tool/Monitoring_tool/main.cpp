@@ -133,8 +133,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	hdc = GetDC (hWnd);
 
-	HBRUSH Red = CreateSolidBrush (RGB (220, 20, 60));
-	HBRUSH White = CreateSolidBrush (RGB (255, 255, 255));
+	HBRUSH Red = CreateSolidBrush (Graphcolor_PinkRed);
+	HBRUSH White = CreateSolidBrush (Graphcolor_Black);
 	HBRUSH OldBrush;
 	GetClientRect (hWnd, &rect);
 

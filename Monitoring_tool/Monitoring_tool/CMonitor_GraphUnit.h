@@ -37,6 +37,7 @@
 #define Graphcolor_Green		RGB(46,254,46)
 #define Graphcolor_LightSky		RGB(88,250,208)
 #define Graphcolor_DeepBlue		RGB(11,33,97)
+#define Graphcolor_PinkRed		RGB (220, 20, 60)
 
 
 
