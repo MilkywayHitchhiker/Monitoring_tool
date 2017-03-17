@@ -49,9 +49,7 @@ public:
 	enum TYPE
 	{
 		BAR_SINGLE_VERT,
-		BAR_SINGLE_HORZ,
 		BAR_COLUMN_VERT,
-		BAR_COLUMN_HORZ,
 		LINE_SINGLE,
 		LINE_MULTI,
 		PIE,
@@ -126,7 +124,7 @@ private:
 	HBRUSH additionBrush;							//라인 부가 설명용 브러쉬
 
 	HPEN LinePen[Pen_Max];							//라인용 펜
-	HBRUSH BARBRUSH[Bar_Max];						//Bar용 색깔 브러쉬
+	HBRUSH BARBRUSH[Bar_Max];						//Bar, 파이용 색깔 브러쉬
 	HFONT BARDataFont;								//Bar 가운데 수치 표시
 	HFONT BARUnitFont;								//Bar하단 이름 쓸 글씨 폰트.
 
@@ -242,7 +240,7 @@ public:
 	void Print_Line_Multi (void);
 	void Print_Bar_Single (void);
 	void Print_Bar_Multi (void);
-
+	void Print_Pie (void);
 
 
 };

@@ -108,18 +108,17 @@ case WM_PAINT:
 	case BAR_SINGLE_VERT :
 		pThis->Print_Bar_Single ();
 		break;
-	case BAR_SINGLE_HORZ :
-		break;
 	case BAR_COLUMN_VERT :
 		pThis->Print_Bar_Multi ();
-		break;
-	case BAR_COLUMN_HORZ :
 		break;
 	case LINE_SINGLE :
 		pThis->Print_Line_Single ();
 		break;
 	case LINE_MULTI :
 		pThis->Print_Line_Multi ();
+		break;
+	case PIE :
+		pThis->Print_Pie ();
 		break;
 	};
 
@@ -194,8 +193,7 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 		ColumnArray[0].DataArray = new Queue<int> (Queue_NodeMax);
 		GraphSize.top += BarNamespace;
 		break;
-	case BAR_SINGLE_HORZ:
-		break;
+
 	case BAR_COLUMN_VERT:
 		ColumnArray = new stColumnInfo[CulumnMax];
 		for ( int cnt = 0; cnt < CulumnMax; cnt++ )
@@ -204,8 +202,7 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 		}
 		GraphSize.top += BarNamespace;
 		break;
-	case BAR_COLUMN_HORZ:
-		break;
+
 	case LINE_SINGLE:
 		ColumnArray = new stColumnInfo[1];
 		ColumnArray[0].DataArray = new Queue<int> (Queue_NodeMax);
@@ -217,6 +214,13 @@ void CMonitor_GraphUnit::CMonitorGraphUnit (int CulumnMax, int QueueNodeMax, int
 			ColumnArray[cnt].DataArray = new Queue<int> (Queue_NodeMax);
 		}
 		GraphSize.right -= BarNameLength;
+		break;
+	case PIE:
+		ColumnArray = new stColumnInfo[CulumnMax];
+		for ( int cnt = 0; cnt < CulumnMax; cnt++ )
+		{
+			ColumnArray[cnt].DataArray = new Queue<int> (Queue_NodeMax);
+		}
 		break;
 	}
 
@@ -552,6 +556,35 @@ void CMonitor_GraphUnit::Print_Bar_Multi (void)
 	return;
 }
 
+
+void CMonitor_GraphUnit::Print_Pie (void)
+{
+	int Sum_Data_Max;
+	int *Data;
+	int Peek_Max;
+	int cnt;
+	
+	Sum_Data_Max = 0;
+	
+	Data = new int[Column_Max];
+
+
+	//컬럼의 마지막 데이터들을 뽑아서 전부 합침.
+	for ( cnt = 0; cnt < Column_Max; cnt++ )
+	{ 
+		Peek_Max = ColumnArray[cnt].DataArray->GetUseSize ();
+		if ( !ColumnArray[cnt].DataArray->Peek (&Data[Column_Max], Peek_Max - 1) )
+		{
+			Sum_Data_Max += Data[Column_Max];
+		}
+	}
+
+
+	
+
+}
+
+
 //==============================================
 //Queue데이터 관리 함수
 //==============================================
@@ -688,7 +721,7 @@ void CMonitor_GraphUnit::Title (void)
 	}
 	
 	//싱글 그래프 타입일 경우 타이틀 옆에 맨 마지막 데이터 값을 출력 해 준다.
-	if ( GraphType == BAR_SINGLE_HORZ || GraphType == BAR_SINGLE_VERT || GraphType == LINE_SINGLE )
+	if ( GraphType == BAR_SINGLE_VERT || GraphType == LINE_SINGLE )
 	{
 		PeekMax = ColumnArray[0].DataArray->GetUseSize ();
 
