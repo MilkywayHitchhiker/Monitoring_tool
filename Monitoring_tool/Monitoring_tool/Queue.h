@@ -63,6 +63,11 @@ public:
 		int Buffer;
 		Buffer = Front;
 
+		if ( (Front + Num) < Front )
+		{
+			return false;
+		}
+
 		if ( (Front + Num) % QueMax == Rear )
 		{
 			return false;

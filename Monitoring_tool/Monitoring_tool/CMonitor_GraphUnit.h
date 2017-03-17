@@ -8,10 +8,36 @@
 
 #define TitleBarLength 30
 #define BarNameLength 55
+#define BarNamespace 20
+
 #define dfTitleMax 30
+#define dfunitMax 30
+
 #define Pen_Max 10
+#define Bar_Max 5
 
+#define NaNumGoDic 16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, FF_DONTCARE, TEXT ("나눔고딕코딩")
+#define GoDic 15, 0, 0, 0, 5, 0, 0, 0, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_DONTCARE, TEXT ("맑은 고딕")
+#define GungSer 15, 0, 0, 0, 1000, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, VARIABLE_PITCH | FF_ROMAN, TEXT ("궁서")
 
+#define Graphcolor_DeepGray	RGB(46,46,46)
+#define Graphcolor_Gray		RGB(110,110,110)
+#define Graphcolor_LightGray	RGB(230,230,230)
+#define Graphcolor_Red			RGB(255,0,0)
+#define Graphcolor_LightRed		RGB(250,88,88)
+#define Graphcolor_DarkRed		RGB(180,4,4)
+#define Graphcolor_Orange		RGB(255,128,0)
+#define Graphcolor_LightGreen	RGB(128,255,0)
+#define Graphcolor_LightBlue	RGB(46,100,254)
+#define Graphcolor_LightPink	RGB(250,88,244)
+#define Graphcolor_WHITE		RGB(255,255,255)
+#define Graphcolor_Black		RGB(0,0,0)
+#define Graphcolor_Purple		RGB(137,0,223)
+#define Graphcolor_Sky			RGB(0,191,255)
+#define Graphcolor_Green		RGB(46,254,46)
+#define Graphcolor_LightSky		RGB(88,250,208)
+#define Graphcolor_DeepBlue		RGB(11,33,97)
+#define Graphcolor_PinkRed		RGB (220, 20, 60)
 
 
 
@@ -23,9 +49,7 @@ public:
 	enum TYPE
 	{
 		BAR_SINGLE_VERT,
-		BAR_SINGLE_HORZ,
 		BAR_COLUMN_VERT,
-		BAR_COLUMN_HORZ,
 		LINE_SINGLE,
 		LINE_MULTI,
 		PIE,
@@ -59,8 +83,8 @@ private:
 	HWND hWnd_Parent;
 
 	HINSTANCE hInst;							// 현재 인스턴스 입니다.
-	WCHAR TitleName[dfTitleMax];					// 해당창의 타이틀에 들어갈 이름입니다.
-
+	WCHAR TitleName[dfTitleMax];				// 해당창의 타이틀에 들어갈 이름입니다.
+	WCHAR unit[dfunitMax];						// 해당 인스턴스의 수치의 표시 단위 입니다.
 
 	TYPE GraphType;								// 현재 창 그래프 타입입니다.
 
@@ -74,9 +98,7 @@ private:
 
 	//각종 색깔들
 	COLORREF BG_Color;							// 백그라운드 컬러입니다.
-	COLORREF GRAY_Color;						
-
-
+	
 
 	HDC hMemDC;									//메모리 DC를 사용하기 위해 필요한 것들.
 	HBITMAP hMemDC_Bitmap;
@@ -101,7 +123,10 @@ private:
 	HPEN additionPen;								//라인 부가 설명용 펜
 	HBRUSH additionBrush;							//라인 부가 설명용 브러쉬
 
-	HPEN LinePen[Pen_Max];								//라인용 펜
+	HPEN LinePen[Pen_Max];							//라인용 펜
+	HBRUSH BARBRUSH[Bar_Max];						//Bar, 파이용 색깔 브러쉬
+	HFONT BARDataFont;								//Bar 가운데 수치 표시
+	HFONT BARUnitFont;								//Bar하단 이름 쓸 글씨 폰트.
 
 	HBRUSH OldBrush;
 	HFONT OldFont;
@@ -128,7 +153,7 @@ public:
 	//=========================================
 	//생성자. 윈도우를 생성하고 초기화 시켜준다.
 	//=========================================
-	CMonitor_GraphUnit (WCHAR * Title, HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight);
+	CMonitor_GraphUnit (WCHAR * Title, WCHAR *ColumnUnit, HINSTANCE hInstance, HWND hWndParent, COLORREF BackColor, TYPE enType, int iPosX, int iPosY, int iWidth, int iHeight);
 
 	//=========================================
 	//파괴자. 동적할당 받은 queue를 파괴하고 삭제한다.
@@ -156,7 +181,6 @@ public:
 		DeleteObject (GridFont);
 		DeleteObject (GridPen);
 
-
 		DeleteObject (additionFont);								//라인 부가 설명용 폰트
 		DeleteObject (additionPen);									//라인 부가 설명용 펜
 		DeleteObject (additionBrush);								//라인 부가 설명용 브러쉬
@@ -165,6 +189,12 @@ public:
 		{
 			DeleteObject (LinePen[cnt]);
 		}
+		for ( int cnt = 0; cnt < Bar_Max; cnt++ )					//BAR용 브러쉬와 폰트 삭제.
+		{
+			DeleteObject (BARBRUSH[cnt]);
+		}
+		DeleteObject (BARDataFont);
+		DeleteObject (BARUnitFont);
 
 		SelectObject (hMemDC, hMemDC_OldBitmap);
 		DeleteObject (hMemDC_Bitmap);
@@ -201,13 +231,16 @@ public:
 	void Title (void);
 	void Grid (void);
 	void MultLine_addition (void);
+	void Bottom_NameBar (void);
 
 	//==============================================
 	//그래프 함수
 	//==============================================
 	void Print_Line_Single (void);
 	void Print_Line_Multi (void);
-
+	void Print_Bar_Single (void);
+	void Print_Bar_Multi (void);
+	void Print_Pie (void);
 
 
 };
